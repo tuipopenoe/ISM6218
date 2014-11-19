@@ -250,7 +250,14 @@ public class DataBuildGUI extends JFrame implements ActionListener{
         String cmd = e.getActionCommand();
         // Handle each button.
         if (MASTER_FILES.equals(cmd)){
-            //TODO: Open Master Files Pane
+            SwingUtilities.invokeLater(new Runnable(){
+                @Override
+                public void run(){
+                    // Create the GUI and display it to the screen
+                    DataBuildMasterFiles mf = new DataBuildMasterFiles();
+                    mf.setVisible(true);
+                }
+            });
         }
         else if (RELATIONSHIPS.equals(cmd)){
             //TODO: Open Relationships Pane
