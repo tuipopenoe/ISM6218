@@ -23,7 +23,7 @@ import java.net.URL;
 
 public class DataBuildGUI extends JFrame implements ActionListener{
 
-
+    private JPanel root_pane;
     static final private String MASTER_FILES = "master_files";
     static final private String RELATIONSHIPS = "relationships";
     static final private String VIEWS = "views";
@@ -52,6 +52,7 @@ public class DataBuildGUI extends JFrame implements ActionListener{
         // placed. Organize the child components with the GroupLayout 
         // layout manager
         JPanel pane = (JPanel) getContentPane();
+        this.root_pane = pane;
         GroupLayout group_layout = new GroupLayout(pane);
         pane.setLayout(group_layout);
 
@@ -253,8 +254,8 @@ public class DataBuildGUI extends JFrame implements ActionListener{
             SwingUtilities.invokeLater(new Runnable(){
                 @Override
                 public void run(){
-                    // Create the GUI and display it to the screen
                     DataBuildMasterFiles mf = new DataBuildMasterFiles();
+                    mf.setLocationRelativeTo(root_pane);
                     mf.setVisible(true);
                 }
             });

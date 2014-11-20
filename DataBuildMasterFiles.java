@@ -7,9 +7,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.URL;
 
-public class DataBuildMasterFiles extends JPanel implements ActionListener{
+public class DataBuildMasterFiles extends JFrame implements ActionListener{
 
-    protected JTextArea text_area;
     static final private String PLAY = "play";
     static final private String LAST = "last";
     static final private String ADD = "add";
@@ -27,33 +26,60 @@ public class DataBuildMasterFiles extends JPanel implements ActionListener{
 
     // Constructor
     public DataBuildMasterFiles(){
-        super(new BorderLayout());
-
-        // Create the toolbar
-        JToolBar tool_bar = new JToolBar("Master Files");
-        add_buttons(tool_bar);
-
-        // Create the text area
-        text_area = new JTextArea(5, 30);
-        text_area.setEditable(false);
-        JScrollPane scroll_pane = new JScrollPane(text_area);
-
-        // Layout the main panel
-        setPreferredSize(new Dimension(640, 480));
-        add(tool_bar, BorderLayout.PAGE_START);
-        add(scroll_pane, BorderLayout.CENTER);
+        init_UI();
     }
 
-    private static void init_UI(){
-        JFrame frame = new JFrame("Master Files");
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
+    private void init_UI(){
+        JPanel pane = (JPanel) getContentPane();
+        GroupLayout group_layout = new GroupLayout(pane);
         // Add content
-        frame.add(new DataBuildMasterFiles());
+        pane.setLayout(group_layout);
+        pane.setToolTipText("Master Files");
+        // Create the toolbar
+        JToolBar tool_bar = new JToolBar("Master Files");
+        this.add_buttons(tool_bar);
+        // Create the text area
+        JTextArea text_area = new JTextArea(5, 15);
+        text_area.setEditable(false);
+        JScrollPane scroll_pane = new JScrollPane(text_area);
+        // Create Key length
+        JLabel key_length = new JLabel("Key Length");
+        JTextArea key_length_entry = new JTextArea();
+        // Create Relative Key Postion 
+        JLabel relative_key_position = new JLabel("Relative Key Position");
+        JTextArea key_position_entry = new JTextArea(1, 10);
+        group_layout.setAutoCreateContainerGaps(true);
+        group_layout.setHorizontalGroup(group_layout.createSequentialGroup()
+            .addGroup(group_layout.createParallelGroup()
+                .addComponent(tool_bar)
+                .addComponent(text_area)
+                .addGap(200)
+            )
+            .addGroup(group_layout.createParallelGroup()
+                .addComponent(relative_key_position)
+                .addComponent(key_position_entry)
+                .addGap(200)
+                )
+        );
+        group_layout.setVerticalGroup(group_layout.createSequentialGroup()
+            .addGroup(group_layout.createParallelGroup()
+                .addComponent(tool_bar)
+                .addComponent(text_area)
+                .addGap(120)
+            )
+            .addGroup(group_layout.createParallelGroup()
+                .addComponent(relative_key_position)
+                .addComponent(key_position_entry)
+                .addGap(120)
+            )
+        );
 
-        // Display the window
-        frame.pack();
-        frame.setVisible(true);
+        pack();
+
+        // Set the Frame title, size, relative location and default close
+        setTitle("Master Files 1.0");
+        setSize(640, 480);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
     protected void add_buttons(JToolBar tool_bar){
@@ -82,6 +108,7 @@ public class DataBuildMasterFiles extends JPanel implements ActionListener{
                              SUBTRACT,
                              "Subtract",
                              "Subtract");
+        tool_bar.add(button);
     }
 
     protected JButton make_button(String image_name,
