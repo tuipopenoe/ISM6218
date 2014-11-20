@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import javax.swing.border.LineBorder;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -16,113 +17,125 @@ import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.plaf.metal.MetalIconFactory;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.border.TitledBorder;
+
 import java.net.URL;
 
 // DataBuild Access
 //import DataBuild.*;
 
-public class DataBuildGUI extends JFrame implements ActionListener{
+class DataBuildGUI implements ActionListener{
 
-    private JPanel root_pane;
-    static final private String MASTER_FILES = "master_files";
-    static final private String RELATIONSHIPS = "relationships";
-    static final private String VIEWS = "views";
-    static final private String GENERATE = "generate";
-    static final private String VIEW_LOG = "view_log";
+    static final JFrame root_frame = new JFrame("DataBuild Version 1.0");
 
     public static void main(String[] args){
-        // Places the application on the Swing Event Queue
-        // Ensures that all UI updates are concurrency-safe (prevent hanging)
-        SwingUtilities.invokeLater(new Runnable(){
-            @Override
+        Runnable r = new Runnable(){
             public void run(){
-                // Create the GUI and display it to the screen
-                DataBuildGUI data_build_gui = new DataBuildGUI();
-                data_build_gui.setVisible(true);
+                // Initialize the root frame
+                //root_frame = new JFrame("DataBuild Version 1.0");
+                root_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                // Initialize the GUI main Panel
+                final JPanel gui = new JPanel(new BorderLayout(5,5));
+                gui.setBorder(new LineBorder(Color.BLACK, 1, false));
+
+                // Create the menu bar
+                final JMenuBar menu_bar = new JMenuBar();
+                initialize_menu_bar(menu_bar);
+                root_frame.setJMenuBar(menu_bar);
+
+                // Create the ToolBar
+                final JPanel tool_bar_panel = new JPanel(
+                    new FlowLayout(FlowLayout.LEFT, 3, 3));
+                JToolBar tool_bar = new JToolBar();
+                add_toolbar_buttons(tool_bar);
+                
+                tool_bar_panel.add(tool_bar);
+                gui.add(tool_bar_panel, BorderLayout.NORTH);
+
+                JPanel dynamic_labels = new JPanel(new BorderLayout(4,4));
+                dynamic_labels.setBorder(
+                    new TitledBorder("BorderLayout(4,4)"));
+                gui.add(dynamic_labels, BorderLayout.WEST);
+
+                final JPanel labels = new JPanel(new GridLayout(0,2,3,3));
+                labels.setBorder(
+                    new TitledBorder("GridLayout(0,2,3,3"));
+
+                JButton add_new = new JButton("Add Another Label");
+                dynamic_labels.add(add_new, BorderLayout.NORTH);
+                add_new.addActionListener(new ActionListener(){
+                    private int label_count = 0;
+                    public void actionPerformed(ActionEvent e){
+                        labels.add(new JLabel("Label" + ++label_count));
+                        root_frame.validate();
+                    }
+                });
+
+                dynamic_labels.add(new JScrollPane(labels),
+                    BorderLayout.CENTER);
+
+                String[] header = {"Name", "Value"};
+                String[] a = new String[0];
+                String[] names = System.getProperties().
+                    stringPropertyNames().toArray(a);
+                String[][] data = new String[names.length][2];
+                for(int i=0; i < names.length; i++){
+                    data[i][0] = names[i];
+                    data[i][1] = System.getProperty(names[i]);
+                }
+                DefaultTableModel model = new DefaultTableModel(data, header);
+                JTable table = new JTable(model);
+                try{
+                    table.setAutoCreateRowSorter(true);
+                }
+                catch(Exception continuewithNoSort){
+
+                }
+                JScrollPane table_scroll = new JScrollPane(table);
+                Dimension table_preferred = table_scroll.getPreferredSize();
+                table_scroll.setPreferredSize(
+                    new Dimension(table_preferred.width,
+                        table_preferred.height/3));
+
+                JPanel image_panel = new JPanel(new GridBagLayout());
+                image_panel.setBorder(
+                    new TitledBorder("GridBagLayout()"));
+
+                JSplitPane split_pane = new JSplitPane(
+                    JSplitPane.VERTICAL_SPLIT,
+                    table_scroll,
+                    new JScrollPane(image_panel));
+                gui.add(split_pane, BorderLayout.CENTER);
+
+                root_frame.setContentPane(gui);
+                root_frame.pack();
+                root_frame.setLocationRelativeTo(null);
+                try{
+                    root_frame.setLocationByPlatform(true);
+                    root_frame.setMinimumSize(root_frame.getSize());
+                }
+                catch(Throwable ignoreAndContinue){
+
+                }
+                root_frame.setVisible(true);
             }
-        });
-    }
-    // Constructor
-    public DataBuildGUI(){
-        init_UI();
+        };
+        SwingUtilities.invokeLater(r);
     }
 
-    private void init_UI(){
-        // Set the content pane of the JFrame where the child components are 
-        // placed. Organize the child components with the GroupLayout 
-        // layout manager
-        JPanel pane = (JPanel) getContentPane();
-        this.root_pane = pane;
-        GroupLayout group_layout = new GroupLayout(pane);
-        pane.setLayout(group_layout);
-
-        // Set Tooltip for the pane
-        pane.setToolTipText("DataBuild Application Version 1.0");
-
-        //######################################################################
-        // DataBuild Components
-        //######################################################################
-
-        // DataBuild Menus
-        //######################################################################
-        JMenuBar menu_bar = new JMenuBar();
-        // Intiliaze the menu bar
-        this.initialize_menu_bar(menu_bar);
-
-        // Set the frame's menu to menu_bar
-        setJMenuBar(menu_bar);
-
-        // DataBuild Toolbar
-        //######################################################################
-        JToolBar tool_bar = new JToolBar("DataBuild ToolBar");
-        // Initialize the toolbar
-        this.add_toolbar_buttons(tool_bar);
-
-        // Child Frames:
-
-
-        // Status Bar
-        // #####################################################################
-        /*JLabel status_label = new JLabel("status");
-        status_label.setHorizontalAlignment(SwingConstants.LEFT);
-        */
-        // Initialize the Group Layout
-        // Creates gaps between the components and the edges of the container
-        group_layout.setAutoCreateContainerGaps(true);
-
-        // Add Components to group Layout
-        group_layout.setHorizontalGroup(group_layout.createSequentialGroup()
-            // Add the component 
-            .addComponent(tool_bar)
-            // Add specific gap
-            .addGap(200)
-        );
-
-        group_layout.setVerticalGroup(group_layout.createSequentialGroup()
-            .addComponent(tool_bar)
-            .addGap(120)
-        );
-
-        // Pack the components in the layout for rendering
-        // Automatically sizes the JFrame based on the size of the components
-        pack();
-
-        // Set the Frame title, size, relative location and default close
-        setTitle("DataBuild 1.0");
-        setSize(1280, 720);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-    }
-
-    protected void initialize_menu_bar(JMenuBar menu_bar){
-        // Initialize Icons
-        ImageIcon exit_icon = new ImageIcon("exit.png");
-
+    protected static void initialize_menu_bar(JMenuBar menu_bar){
         // File Menu
         JMenu file_menu = new JMenu("File");
         file_menu.setMnemonic(KeyEvent.VK_F);
 
-        JMenuItem exit_menu_item = new JMenuItem("Exit", exit_icon);
+        JMenuItem exit_menu_item = new JMenuItem("Exit");
         exit_menu_item.setMnemonic(KeyEvent.VK_X);
         exit_menu_item.setToolTipText("Exit Application");
         exit_menu_item.addActionListener(new ActionListener(){
@@ -163,7 +176,6 @@ public class DataBuildGUI extends JFrame implements ActionListener{
         JMenu help_menu = new JMenu("Help");
         help_menu.setMnemonic(KeyEvent.VK_H);
 
-
         // Add menus to menu bar
         menu_bar.add(file_menu);
         menu_bar.add(edit_menu);
@@ -177,72 +189,51 @@ public class DataBuildGUI extends JFrame implements ActionListener{
     // Toolbar button methods
     // #########################################################################
     // Add button to the selected tool bar
-    protected void add_toolbar_buttons(JToolBar tool_bar){
+    protected static void add_toolbar_buttons(JToolBar tool_bar){
         // Button placeholder
         JButton button = null;
 
         // Master Files button
-        button = make_toolbar_button("master_files",
-                                     MASTER_FILES,
+        button = make_button("master_files",
                                      "Open Master Files Pane",
                                      "Master Files");
         tool_bar.add(button);
 
         // Relationships button
-        button = make_toolbar_button("relationships",
-                                     RELATIONSHIPS,
+        button = make_button("relationships",
                                      "Open Relationships Pane",
                                      "Relationships");
         tool_bar.add(button);
 
         // Views button
-        button = make_toolbar_button("views",
-                                     VIEWS,
+        button = make_button("views",
                                      "Open Views Pane",
                                      "Views");
         tool_bar.add(button);
 
         // Generate button
-        button = make_toolbar_button("generate",
-                                     GENERATE,
+        button = make_button("generate",
                                      "Open Generate Pane",
                                      "Generate");
         tool_bar.add(button);
 
         // View Log button
-        button = make_toolbar_button("view_log",
-                                     VIEW_LOG,
+        button = make_button("view_log",
                                      "Open the View Log Pane",
                                      "View Log");
         tool_bar.add(button);
     }
 
     // Create a new button 
-    protected JButton make_toolbar_button(String image_name,
-                                          String action_command,
-                                          String tool_tip_text,
-                                          String alt_text)
+    protected static JButton make_button(String action_command,
+                                                 String tool_tip_text,
+                                                 String alt_text)
     {
-        // Look for the image
-        String image_location = "images/" + image_name + ".png";
-        URL image_url = DataBuildGUI.class.getResource(image_location);
-
         // Create and initialize the button
         JButton button = new JButton();
         button.setActionCommand(action_command);
         button.setToolTipText(tool_tip_text);
-        button.addActionListener(this);
-
-        // Check if the image exists
-        if(image_url != null){
-            // Image found
-            button.setIcon(new ImageIcon(image_url, alt_text));
-        }
-        else{
-            // Image not found
-            button.setText(alt_text);
-            System.err.println("Resource not found: "+ image_location);
-        }
+        //button.addActionListener(this);
 
         return button;
     }
@@ -250,31 +241,27 @@ public class DataBuildGUI extends JFrame implements ActionListener{
     public void actionPerformed(ActionEvent e) {
         String cmd = e.getActionCommand();
         // Handle each button.
-        if (MASTER_FILES.equals(cmd)){
+        if ("master_files".equals(cmd)){
             SwingUtilities.invokeLater(new Runnable(){
                 @Override
                 public void run(){
                     DataBuildMasterFiles mf = new DataBuildMasterFiles();
-                    mf.setLocationRelativeTo(root_pane);
+                    mf.setLocationRelativeTo(root_frame);
                     mf.setVisible(true);
                 }
             });
         }
-        else if (RELATIONSHIPS.equals(cmd)){
+        else if ("relationsips".equals(cmd)){
             //TODO: Open Relationships Pane
         }
-        else if (VIEWS.equals(cmd)){
+        else if ("views".equals(cmd)){
             //TODO: Open VIEWS pane
         }
-        else if(GENERATE.equals(cmd)){
+        else if("generate".equals(cmd)){
             //TODO: Open Generate Pane
         }
-        else if(VIEW_LOG.equals(cmd)){
+        else if("view_log".equals(cmd)){
             //TODO: Open View Log pane
         }
     }
 }
-
-/*class DataBuildMasterFiles extends JFrame{
-
-}*/
