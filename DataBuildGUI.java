@@ -30,104 +30,123 @@ import java.net.URL;
 // DataBuild Access
 //import DataBuild.*;
 
-class DataBuildGUI implements ActionListener{
-
-    static final JFrame root_frame = new JFrame("DataBuild Version 1.0");
-
+class DataBuildGUI extends JFrame implements ActionListener{
+    protected static DataBuildGUI root_frame;
     public static void main(String[] args){
         Runnable r = new Runnable(){
             public void run(){
-                // Initialize the root frame
-                //root_frame = new JFrame("DataBuild Version 1.0");
-                root_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-                // Initialize the GUI main Panel
-                final JPanel gui = new JPanel(new BorderLayout(5,5));
-                gui.setBorder(new LineBorder(Color.BLACK, 1, false));
-
-                // Create the menu bar
-                final JMenuBar menu_bar = new JMenuBar();
-                initialize_menu_bar(menu_bar);
-                root_frame.setJMenuBar(menu_bar);
-
-                // Create the ToolBar
-                final JPanel tool_bar_panel = new JPanel(
-                    new FlowLayout(FlowLayout.LEFT, 3, 3));
-                JToolBar tool_bar = new JToolBar();
-                add_toolbar_buttons(tool_bar);
-                
-                tool_bar_panel.add(tool_bar);
-                gui.add(tool_bar_panel, BorderLayout.NORTH);
-
-                JPanel dynamic_labels = new JPanel(new BorderLayout(4,4));
-                dynamic_labels.setBorder(
-                    new TitledBorder("BorderLayout(4,4)"));
-                gui.add(dynamic_labels, BorderLayout.WEST);
-
-                final JPanel labels = new JPanel(new GridLayout(0,2,3,3));
-                labels.setBorder(
-                    new TitledBorder("GridLayout(0,2,3,3"));
-
-                JButton add_new = new JButton("Add Another Label");
-                dynamic_labels.add(add_new, BorderLayout.NORTH);
-                add_new.addActionListener(new ActionListener(){
-                    private int label_count = 0;
-                    public void actionPerformed(ActionEvent e){
-                        labels.add(new JLabel("Label" + ++label_count));
-                        root_frame.validate();
-                    }
-                });
-
-                dynamic_labels.add(new JScrollPane(labels),
-                    BorderLayout.CENTER);
-
-                String[] header = {"Name", "Value"};
-                String[] a = new String[0];
-                String[] names = System.getProperties().
-                    stringPropertyNames().toArray(a);
-                String[][] data = new String[names.length][2];
-                for(int i=0; i < names.length; i++){
-                    data[i][0] = names[i];
-                    data[i][1] = System.getProperty(names[i]);
-                }
-                DefaultTableModel model = new DefaultTableModel(data, header);
-                JTable table = new JTable(model);
-                try{
-                    table.setAutoCreateRowSorter(true);
-                }
-                catch(Exception continuewithNoSort){
-
-                }
-                JScrollPane table_scroll = new JScrollPane(table);
-                Dimension table_preferred = table_scroll.getPreferredSize();
-                table_scroll.setPreferredSize(
-                    new Dimension(table_preferred.width,
-                        table_preferred.height/3));
-
-                JPanel image_panel = new JPanel(new GridBagLayout());
-                image_panel.setBorder(
-                    new TitledBorder("GridBagLayout()"));
-
-                JSplitPane split_pane = new JSplitPane(
-                    JSplitPane.VERTICAL_SPLIT,
-                    table_scroll,
-                    new JScrollPane(image_panel));
-                gui.add(split_pane, BorderLayout.CENTER);
-
-                root_frame.setContentPane(gui);
-                root_frame.pack();
-                root_frame.setLocationRelativeTo(null);
-                try{
-                    root_frame.setLocationByPlatform(true);
-                    root_frame.setMinimumSize(root_frame.getSize());
-                }
-                catch(Throwable ignoreAndContinue){
-
-                }
-                root_frame.setVisible(true);
+                DataBuildGUI data_build_gui = new DataBuildGUI();
+                root_frame = data_build_gui;
+                data_build_gui.setVisible(true);
             }
         };
         SwingUtilities.invokeLater(r);
+    }
+
+    // Constructor for the DataBuild GUI frame
+    public DataBuildGUI(){
+        init_UI();
+    }
+
+    protected void init_UI(){
+        // Initialize the GUI main Panel
+        final JPanel gui = new JPanel(new BorderLayout(5,5));
+        gui.setBorder(new LineBorder(Color.BLACK, 1, false));
+
+        // Create the menu bar
+        final JMenuBar menu_bar = new JMenuBar();
+        initialize_menu_bar(menu_bar);
+        this.setJMenuBar(menu_bar);
+
+        // Create the ToolBar
+        final JPanel tool_bar_panel = new JPanel(
+            new FlowLayout(FlowLayout.LEFT, 3, 3));
+        JToolBar tool_bar = new JToolBar();
+        // Add the buttons to the toolbar
+        add_toolbar_buttons(tool_bar, this);
+        // Add the tool bar object to the tool bar panel
+        tool_bar_panel.add(tool_bar);
+        // Place the tool bar in the Nort of the GUI
+        gui.add(tool_bar_panel, BorderLayout.NORTH);
+
+
+        // Labels layout
+        JPanel dynamic_labels = new JPanel(new BorderLayout(4,4));
+        dynamic_labels.setBorder(
+            new LineBorder(Color.BLACK, 1, false));
+        gui.add(dynamic_labels, BorderLayout.WEST);
+
+        final JPanel labels = new JPanel(new GridLayout(0,2,3,3));
+        labels.setBorder(
+            new LineBorder(Color.BLACK, 1, false));
+
+        JButton add_new = new JButton("Add Another Label");
+        dynamic_labels.add(add_new, BorderLayout.NORTH);
+        add_new.addActionListener(new ActionListener(){
+            private int label_count = 0;
+            public void actionPerformed(ActionEvent e){
+                labels.add(new JLabel("Label" + ++label_count));
+                gui.validate();
+            }
+        });
+
+        dynamic_labels.add(new JScrollPane(labels),
+            BorderLayout.CENTER);
+
+
+        // Table Layout
+        String[] header = {"Name", "Value"};
+        String[] a = new String[0];
+        String[] names = System.getProperties().
+            stringPropertyNames().toArray(a);
+        String[][] data = new String[names.length][2];
+        for(int i=0; i < names.length; i++){
+            data[i][0] = names[i];
+            data[i][1] = System.getProperty(names[i]);
+        }
+        DefaultTableModel model = new DefaultTableModel(data, header);
+        JTable table = new JTable(model);
+        try{
+            table.setAutoCreateRowSorter(true);
+        }
+        catch(Exception continuewithNoSort){
+
+        }
+        JScrollPane table_scroll = new JScrollPane(table);
+        Dimension table_preferred = table_scroll.getPreferredSize();
+        table_scroll.setPreferredSize(
+            new Dimension(table_preferred.width,
+                table_preferred.height));
+
+        // Image pane layout
+        JPanel image_panel = new JPanel(new GridBagLayout());
+        image_panel.setBorder(
+            new LineBorder(Color.BLACK, 1, false));
+
+
+        // Split the table and the image panel 
+        JSplitPane split_pane = new JSplitPane(
+            JSplitPane.VERTICAL_SPLIT,
+            table_scroll,
+            new JScrollPane(image_panel));
+        // Add the Split pane to the center and east portions
+        gui.add(split_pane, BorderLayout.CENTER);
+
+
+        // Initialize the root data build frame
+        this.setContentPane(gui);
+        this.pack();
+        this.setLocationRelativeTo(null);
+        this.setTitle("DataBuild Version 1.0");
+        this.setSize(1280, 720);
+        try{
+            this.setLocationByPlatform(true);
+            this.setMinimumSize(this.getSize());
+        }
+        catch(Throwable ignoreAndContinue){
+
+        }
+        this.setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
 
     protected static void initialize_menu_bar(JMenuBar menu_bar){
@@ -189,51 +208,58 @@ class DataBuildGUI implements ActionListener{
     // Toolbar button methods
     // #########################################################################
     // Add button to the selected tool bar
-    protected static void add_toolbar_buttons(JToolBar tool_bar){
+    protected static void add_toolbar_buttons(JToolBar tool_bar,
+                                              DataBuildGUI data_build_gui){
         // Button placeholder
         JButton button = null;
 
         // Master Files button
         button = make_button("master_files",
-                                     "Open Master Files Pane",
-                                     "Master Files");
+                             "Open Master Files Pane",
+                             "Master Files",
+                             data_build_gui);
         tool_bar.add(button);
 
         // Relationships button
         button = make_button("relationships",
-                                     "Open Relationships Pane",
-                                     "Relationships");
+                             "Open Relationships Pane",
+                             "Relationships",
+                             data_build_gui);
         tool_bar.add(button);
 
         // Views button
         button = make_button("views",
-                                     "Open Views Pane",
-                                     "Views");
+                             "Open Views Pane",
+                             "Views",
+                             data_build_gui);
         tool_bar.add(button);
 
         // Generate button
         button = make_button("generate",
-                                     "Open Generate Pane",
-                                     "Generate");
+                             "Open Generate Pane",
+                             "Generate",
+                             data_build_gui);
         tool_bar.add(button);
 
         // View Log button
         button = make_button("view_log",
-                                     "Open the View Log Pane",
-                                     "View Log");
+                             "Open the View Log Pane",
+                             "View Log",
+                             data_build_gui);
         tool_bar.add(button);
     }
 
     // Create a new button 
     protected static JButton make_button(String action_command,
-                                                 String tool_tip_text,
-                                                 String alt_text)
+                                         String tool_tip_text,
+                                         String alt_text,
+                                         DataBuildGUI data_build_gui)
     {
         // Create and initialize the button
-        JButton button = new JButton();
+        JButton button = new JButton(alt_text);
         button.setActionCommand(action_command);
         button.setToolTipText(tool_tip_text);
-        //button.addActionListener(this);
+        button.addActionListener(data_build_gui);
 
         return button;
     }
