@@ -4,7 +4,6 @@
 // GUI elements can be found in the DataBuild_GUI class.
 // TODO: Finish unit tests
 
-package DataBuild;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -18,16 +17,151 @@ import java.io.*;
 
 class DataBuild{
     // Class variables
-    public Connection connection;
+    private String url;
+    private String password;
+    private String login;
+    private String input;
+
+    private Connection connection;
+
     // Constructor
     public void DataBuild(){
         // Initialize the DB connection
-        this.connection = create_connection("jdbc:mysql://localhost:1337/init",
-            "username", "passw0rd");
+        /*this.connection = create_connection("jdbc:mysql://localhost:1337/init",
+            "username", "passw0rd");*/
 
     }
 
+    public static void main(String[] args){
+        // Open Standard input
+        BufferedReader b = new BufferedReader(new InputStreamReader(System.in));
+        try{
+            // Create the connection with the initial command line arguments
+            DataBuild data_build = new DataBuild();
+            // Open the connection to the database
+            data_build.establish_connection(b);
+            data_build.execute_input(b);
+        }
+        catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+    protected void init_default_login(){
+        // Initialize the default url and login credentials
+        this.set_url("jdbc:mysql://localhost:3306/testdb");
+        this.set_login("root");
+        this.set_password("passw0rd");
+    }
+
+    protected void establish_connection(BufferedReader br){
+        try{
+            System.out.println("Enter the url to connect to: ");
+            System.out.print(">> ");
+            this.set_input(br.readLine());
+            System.out.println(this.get_input());
+            if(this.get_input().isEmpty()){
+                // Default URL
+                this.set_url("jdbc:mysql://localhost:3306/testdb");
+            }
+            this.set_url(this.get_input());
+            System.out.println(this.get_url());
+            System.out.println("\nEnter the login for the database: ");
+            System.out.print(">> ");
+            this.set_input(br.readLine());
+            // Default Login
+            if(this.get_input().isEmpty()){
+                this.set_login("root");
+            }
+            this.set_login(this.get_input());
+            System.out.println("\nEnter the password for the database: ");
+            System.out.print(">> ");
+            this.set_input(br.readLine());
+            // Default Password
+            if(this.get_input().isEmpty()){
+                this.set_password("passw0rd");
+            }
+            this.set_password(this.get_input());
+            System.out.println("\nEstablishing Connection...");
+            this.set_connection(DriverManager.getConnection(get_url(),
+                get_login(), get_password()));
+        }
+        catch(Exception ex){
+            ex.printStackTrace();
+        }
+        System.out.println("\nConnected");
+    }
+
+    protected void execute_input(BufferedReader br){
+        boolean exit = false;
+        while(!exit){
+            try{
+                // Prompt the User
+                System.out.print(">>: ");
+                // Set the input to the entered command
+                this.set_input(br.readLine());
+                // exit the program
+                if(this.get_input().equals("exit")){
+                    exit = true;
+                    break;
+                }
+                // display the program version
+                else if(this.get_input().equals("version")){
+                    Connection con = this.get_connection();
+                    Statement st = con.createStatement();
+                    ResultSet rs = st.executeQuery("SELECT VERSION");
+                    if(rs.next()){
+                        System.out.println(rs.getString(1));
+                    }
+                }
+            }
+            catch(Exception e){
+
+            }
+        }
+    }
+
     // Accessors and Mutators
+    public String get_input(){
+        return this.input;
+    }
+
+    public void set_input(String input){
+        this.input = input;
+    }
+
+    public String get_url(){
+        return this.url;
+    }
+
+    public void set_url(String url){
+        this.url = url;
+    }
+
+    public String get_login(){
+        return this.login;
+    }
+
+    public void set_login(String login){
+        this.login = login;
+    }
+
+    public String get_password(){
+        return this.password;
+    }
+
+    public void set_password(String password){
+        this.password = password;
+    }
+
+
+    public Connection get_connection(){
+        return this.connection;
+    }
+
+    public void set_connection(Connection connection){
+        this.connection = connection;
+    }
 
     // Initialize Table
     public boolean initialize_table(){
@@ -207,7 +341,7 @@ class DataBuild{
         return false;
     }
 
-    // Main Method
+/*    // Main Method
     public static void main(String[] args){
         try{
             // Create the connection with the initial command line arguments
@@ -218,7 +352,7 @@ class DataBuild{
             ex.printStackTrace();
         }
     }
-
+*/
     public boolean unit_tests(){
         try{
             // Tests executed succesfully
