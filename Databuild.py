@@ -11,32 +11,75 @@ import traceback
 
 class Databuild(Tk.Frame):
     def __init__(self, parent):
+        # Init the class frame
         Tk.Frame.__init__(self, parent)
+        # Set the parent frame
         self.parent = parent
-        self.init_ui()
+
+        ############################
+        # Initialize Class Variables
+        ############################
         # MySQL database info
         self.db = None
         self.cursor = None
-        # Connection info
+        self.current_table = None
+        # Connection Variables
         self.host = None
         self.user = None
         self.password = None
         self.database = None
         # Store data from queries
         self.data = None
+        self.tables = None
+        self.table = 'databuild'
+
+        # Open initial connection
+        self.open_connection()
+        # Setup the UI
+        self.init_ui()
+        # Populate the inital data
+        self.init_data()
 
     def init_ui(self):
         # Set the title
         self.parent.title("Databuild 2.0");
 
         # Connection Elements
-        self.conn_button = Tk.Button(self.parent, text='Connect to Database',
-                                     command=self.open_connection_dialog)
-        self.conn_button.pack()
+        self.conn_button = Tk.Button(self.parent,
+                                     text='Connect to Database',
+                                     command=self.open_connection_dialog)\
+                                    .grid(row=0, column=5, columnspan=2)
+
+        # Populate button
+        self.pop_disp_button = Tk.Button(self.parent, text='Populate Display',
+                                         command=self.populate_display)\
+                                        .grid(row=1, column=5, columnspan=2)
+        # Tables in the Database
+        self.tables_list = None
 
         # Display Data
-        self.data_display = Tk.Listbox(self.parent)
-        self.data_display.pack()
+        self.data_display = Tk.Listbox(self.parent, height=10, width=20)
+        self.data_display.grid(row=3, column=0)
+        yscroll = Tk.Scrollbar(command=self.data_display.yview,
+                               orient=Tk.VERTICAL)
+        yscroll.grid(row=3, column=5, sticky='ns')
+
+    def init_data(self):
+        self.populate_table_dropdown()
+        #self.populate_display()
+
+    def execute_command(self, sql):
+        try:
+            # Execute the sql command
+            self.cursor.execute(sql)
+            # Commit changes to the db
+            self.db.commit()
+            # return output
+            return self.cursor.fetchall()
+        except:
+            # If there is an error, rollback the changes
+            self.db.rollback()
+            return None
 
     def open_connection_dialog(self):
         t = Tk.Toplevel(self)
@@ -59,18 +102,41 @@ class Databuild(Tk.Frame):
 
         def _open_connection():
             if e_host.get() and e_user.get() and e_pass.get() and e_data.get():
-                self.open_connection(e_host.get(), e_user.get(), e_pass.get(),
-                                     e_data.get())
+                self.open_new_connection(e_host.get(),
+                                         e_user.get(), 
+                                         e_pass.get(),
+                                         e_data.get())
                 t.destroy()
             else:
-                self.open_connection()
+                self.open_new_connection()
                 t.destroy()
 
         b_conn = Tk.Button(t, text='Connect', command=_open_connection)
         b_conn.pack()
 
+    def populate_table_dropdown(self):
+        options = self.show_tables()
+        var = Tk.StringVar()
+        var.set(options[0])
+        self.tables_list = Tk.OptionMenu(self.parent, 
+                                         var,
+                                         *options,
+                                         command=self.select_table)\
+                                        .grid(row=2, column=5, columnspan=2)
+
+    def select_table(self, table):
+        """Set the current table to table."""
+        try:
+            self.table = table[0]
+        except:
+            traceback.print_exc()
+
     def populate_display(self):
-        self.data =  
+        # Clear the listbox
+        self.data_display.delete(0, Tk.END)
+        self.data = self.select_rows(self.table)
+        for i in range(len(self.data)):
+            self.data_display.insert(i+1, self.data[i])
 
     def open_connection(self, host='localhost', user='root',
                         password='passw0rd', database='databuild'):
@@ -82,10 +148,18 @@ class Databuild(Tk.Frame):
             self.db = MySQLdb.connect(self.host, self.user, self.password,
                                       self.database)
             self.cursor = self.db.cursor()
+        except:
+            #TODO
+            traceback.print_exc()
+
+    def open_new_connection(self, host='localhost', user='root',
+                        password='passw0rd', database='databuild'):
+        try:
+            self.open_connection(host, user, password, database)
+            self.populate_table_dropdown()
             tkMessageBox.showinfo("", "Connection to database %s opened"
                                   % self.database)
         except:
-            #TODO
             traceback.print_exc()
 
     def close_connection(self):
@@ -97,17 +171,6 @@ class Databuild(Tk.Frame):
             #TODO
             traceback.print_exc()
 
-    def execute_command(self, sql):
-        try:
-            # Execute the sql command
-            self.cursor.execute(sql)
-            # Commit changes to the db
-            self.db.commit()
-            # return output
-            return self.cursor.fetchall()
-        except:
-            # If there is an error, rollback the changes
-            self.db.rollback()
 
     def select_database(self, database='databuild'):
         try:
@@ -160,10 +223,11 @@ class Databuild(Tk.Frame):
         """Show available tables."""
         try:
             sql = 'SHOW tables;'
-            self.execute_command(sql)
+            return self.execute_command(sql)
         except:
             #TODO
             traceback.print_exc()
+            return None
 
     def create_table(self, **kwargs):
         """Create a new table in the database."""
@@ -182,6 +246,22 @@ class Databuild(Tk.Frame):
         except:
             #TODO
             traceback.print_exc()
+
+    def select_rows(self, table, where=''):
+        """Select rows from the table."""
+        try:
+            # Initialize the select statement
+            sql = 'SELECT * FROM %s' % table
+            # If a where clause is present, add it to the end
+            if where:
+                sql += ' WHERE %s ' % where
+            # Add the closing semicolon
+            sql += ';'
+            # return the values from the executed command
+            return self.execute_command(sql)
+        except:
+            traceback.print_exc()
+            return None
 
     def insert_row(self, table, **kwargs):
         """Insert records into a table."""
