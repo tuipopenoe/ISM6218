@@ -8,9 +8,12 @@ import Tkinter as Tk
 import tkMessageBox
 import MySQLdb
 import traceback
+import logging
 
 class Databuild(Tk.Frame):
     def __init__(self, parent):
+        # Initialize logging
+        logging.basicConfig(filename='databuild.log', level=logging.INFO)
         # Init the class frame
         Tk.Frame.__init__(self, parent)
         # Set the parent frame
@@ -48,25 +51,29 @@ class Databuild(Tk.Frame):
         self.conn_button = Tk.Button(self.parent,
                                      text='Connect to Database',
                                      command=self.open_connection_dialog)\
-                                    .grid(row=0, column=5, columnspan=2)
+                                    .grid(row=0, column=4, columnspan=2)
 
-        # Populate button
-        self.pop_disp_button = Tk.Button(self.parent, text='Populate Display',
-                                         command=self.populate_display)\
-                                        .grid(row=1, column=5, columnspan=2)
         # Tables in the Database
+        self.table_label = Tk.Label(self.parent, text='Current Table: ')\
+                                    .grid(row=1, column=3, sticky=Tk.W+Tk.E)
         self.tables_list = None
 
         # Display Data
-        self.data_display = Tk.Listbox(self.parent, height=10, width=20)
-        self.data_display.grid(row=3, column=0)
+        self.data_display = Tk.Listbox(self.parent, height=10, width=40)
+        self.data_display.grid(row=2, column=0, columnspan=5, sticky=Tk.W+Tk.E)
         yscroll = Tk.Scrollbar(command=self.data_display.yview,
                                orient=Tk.VERTICAL)
-        yscroll.grid(row=3, column=5, sticky='ns')
+        yscroll.grid(row=2, column=5, sticky='ns')
+
+        # Insert Rows
+        self.insert_row_button = Tk.Button(self.parent,
+                                           text='Insert Row',
+                                           command=self.insert_row_dialog)\
+                                 .grid(row=4, column=4, sticky=Tk.W+Tk.E)
 
     def init_data(self):
         self.populate_table_dropdown()
-        #self.populate_display()
+        self.populate_display()
 
     def execute_command(self, sql):
         try:
@@ -83,36 +90,63 @@ class Databuild(Tk.Frame):
 
     def open_connection_dialog(self):
         t = Tk.Toplevel(self)
-        l_host = Tk.Label(t, text='Host: ')
-        l_host.pack()
-        e_host = Tk.Entry(t, justify=Tk.RIGHT)
-        e_host.pack()
-        l_user = Tk.Label(t, text='User: ')
-        l_user.pack()
-        e_user = Tk.Entry(t, justify=Tk.RIGHT)
-        e_user.pack()
-        l_pass = Tk.Label(t, text='Password: ')
-        l_pass.pack()
-        e_pass = Tk.Entry(t, justify=Tk.RIGHT)
-        e_pass.pack()
-        l_data = Tk.Label(t, text='Database: ')
-        l_data.pack()
-        e_data = Tk.Entry(t, justify=Tk.RIGHT)
-        e_data.pack()
+        l_host = Tk.Label(t, text='Host: ').grid(row=0, column=0)
+        e_host = Tk.Entry(t, justify=Tk.RIGHT).grid(row=0, column=1)
+        l_user = Tk.Label(t, text='User: ').grid(row=1, column=0)
+        e_user = Tk.Entry(t, justify=Tk.RIGHT).grid(row=1, column=1)
+        l_pass = Tk.Label(t, text='Password: ').grid(row=2, column=0)
+        e_pass = Tk.Entry(t, justify=Tk.RIGHT).grid(row=2, column=1)
+        l_data = Tk.Label(t, text='Database: ').grid(row=3, column=0)
+        e_data = Tk.Entry(t, justify=Tk.RIGHT).grid(row=3, column=1)
 
         def _open_connection():
-            if e_host.get() and e_user.get() and e_pass.get() and e_data.get():
+            try:
                 self.open_new_connection(e_host.get(),
                                          e_user.get(), 
                                          e_pass.get(),
                                          e_data.get())
-                t.destroy()
-            else:
+            except:
                 self.open_new_connection()
+            t.destroy()
+
+        b_conn = Tk.Button(t, text='Connect', command=_open_connection)\
+                          .grid(row=4, column=0, columnspan=2)
+
+    def insert_row_dialog(self):
+        try:
+            t = Tk.Toplevel(self)
+
+            column_names = list(self.get_column_names(self.table))
+            entry = {}
+            label = {}
+            i = 0
+            for name in column_names:
+                e = Tk.Entry(t)
+                e.grid(column=1, sticky=Tk.E)
+                entry[name] = e
+
+                lb = Tk.Label(t, text=name)
+                lb.grid(row=i, column=0, sticky=Tk.W)
+                label[name] = lb
+                i += 1
+
+            def _insert_row():
+                values = []
+                for name in column_names:
+                    values.append(entry[name].get())
+                values = ', '.join(map(lambda x: "'" + x + "'", values))
+                print('Inserting record: %s' % values)
+                self.insert_row(self.table, values)
+
                 t.destroy()
 
-        b_conn = Tk.Button(t, text='Connect', command=_open_connection)
-        b_conn.pack()
+            print(column_names)
+            b_ins = Tk.Button(t, text='Insert Row', command=_insert_row)\
+                             .grid(row=i+1, column=1, sticky=Tk.W+Tk.E)
+            
+
+        except:
+            traceback.print_exc()
 
     def populate_table_dropdown(self):
         options = self.show_tables()
@@ -122,12 +156,16 @@ class Databuild(Tk.Frame):
                                          var,
                                          *options,
                                          command=self.select_table)\
-                                        .grid(row=2, column=5, columnspan=2)
+                                        .grid(row=1,
+                                              column=4,
+                                              columnspan=2,
+                                              sticky=Tk.W+Tk.E)
 
     def select_table(self, table):
         """Set the current table to table."""
         try:
             self.table = table[0]
+            self.populate_display()
         except:
             traceback.print_exc()
 
@@ -263,13 +301,23 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
             return None
 
-    def insert_row(self, table, **kwargs):
+    def insert_row(self, table, values):
         """Insert records into a table."""
         try:
-            sql = 'INSERT INTO ' + table + kwargs
+            sql = 'INSERT INTO %s VALUES (%s);', (table, values)
+            print(sql)
             self.execute_command(sql)
         except:
             #TODO
+            traceback.print_exc()
+
+    def get_column_names(self, table):
+        """Get the column names for the specified table."""
+        try:
+            sql = 'SELECT column_name FROM information_schema.columns WHERE '\
+                  'table_name="%s"' % table
+            return self.execute_command(sql)
+        except:
             traceback.print_exc()
 
     def update_row(self, table, **kwargs):
