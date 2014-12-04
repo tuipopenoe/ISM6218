@@ -1,0 +1,5 @@
+ERROR:root:<function print_exc at 0x000000000255C5F8>
+ERROR:root:()
+ERROR:root:'NoneType' object has no attribute '__getitem__'
+ERROR:root:'NoneType' object has no attribute '__getitem__'
+ERROR:root:Databuild instance has no attribute 'init_ui_file_menu'
