@@ -70,11 +70,12 @@ class Databuild(Tk.Frame):
         # Set the title
         self.parent.title('Databuild 2.0')
         #self.parent.geometry('1280x720')
-
+        # Initialize the UI Menus
         self.init_ui_menus()
+        # Initialize the table selector dropdown
         self.init_ui_tables()
+        # Initialize the data display
         self.init_ui_display()
-        self.init_ui_insert()
 
     def init_display(self):
         """Fetch the initial data to display upon application start.
@@ -155,6 +156,8 @@ class Databuild(Tk.Frame):
             self.init_ui_connection_menu()
             # Relationships Menu
             self.init_ui_relationships_menu()
+            # Insert Menu
+            self.init_ui_insert_menu()
             # Set menu bar for root frame 
             self.parent.config(menu=self.menu_bar)
         except Exception, ex:
@@ -197,6 +200,8 @@ class Databuild(Tk.Frame):
             self.rel_menu.add_command(label='View Relationsips',
                                       command=self.view_relationships_dialog)
             self.rel_menu.add_separator()
+            self.rel_menu.add_command(label='Describe Table',
+                                      command=self.describe_table_dialog)
             self.menu_bar.add_cascade(label='Relationships',
                                       menu=self.rel_menu)
         except Exception, ex:
@@ -216,7 +221,7 @@ class Databuild(Tk.Frame):
     def init_ui_display(self):
         try:
             # Display Data
-            self.data_display = Tk.Listbox(self.parent, height=10, width=40)
+            self.data_display = Tk.Listbox(self.parent, height=20, width=50)
             self.data_display.grid(row=2, column=0, columnspan=5,
                                    sticky=Tk.W+Tk.E)
             yscroll = Tk.Scrollbar(command=self.data_display.yview,
@@ -225,18 +230,16 @@ class Databuild(Tk.Frame):
         except Exception, ex:
             logging.error(ex)
 
-    def init_ui_insert(self):
+    def init_ui_insert_menu(self):
         try:
-            # Insert Rows
-            self.insert_row_button = Tk.Button(self.parent,
-                                               text='Insert Row',
-                                               command=self.insert_row_dialog)\
-                                     .grid(row=4, column=4, sticky=Tk.W+Tk.E)
-            self.insert_column_button = \
-                    Tk.Button(self.parent,
-                              text='Insert Column',
-                              command=self.insert_column_dialog)\
-                              .grid(row=4, column=3, sticky=Tk.W+Tk.E)
+            self.insert_menu = Tk.Menu(self.menu_bar, tearoff=0)
+            self.insert_menu.add_command(label='Insert Row',
+                                         command=self.insert_row_dialog)
+            self.insert_menu.add_separator()
+            self.insert_menu.add_command(label='Insert Column',
+                                         command=self.insert_column_dialog)
+            self.menu_bar.add_cascade(label='Insert',
+                                      menu=self.insert_menu)
         except Exception, ex:
             logging.error(ex)
 
@@ -307,8 +310,8 @@ class Databuild(Tk.Frame):
                              .grid(row=i+1, column=1, sticky=Tk.W+Tk.E)
             
 
-        except:
-            traceback.print_exc()
+        except Exception, ex:
+            logging.error(ex)
 
     def insert_column_dialog(self):
         try:
@@ -328,24 +331,39 @@ class Databuild(Tk.Frame):
             col_ins_button = Tk.Button(t, text='Insert Column',
                                         command=_insert_column)\
                                         .grid(row=2, column=1, sticky=Tk.W+Tk.E)
-        except:
-            traceback.print_exc()
+        except Exception, ex:
+            logging.error(ex)
+
+    def describe_table_dialog(self):
+        """Create a dialog box that describes the table layout.
+        Args: None
+        Rets: None"""
+        try:
+            t = DescribeTableDialog(self)
+        except Exception, ex:
+            logging.error(ex)
 
     def populate_table_dropdown(self):
-        options = self.show_tables()
-        var = Tk.StringVar()
-        var.set(options[0])
-        self.tables_list = Tk.OptionMenu(self.parent, 
-                                         var,
-                                         *options,
-                                         command=self.select_table)\
-                                        .grid(row=1,
-                                              column=4,
-                                              columnspan=2,
-                                              sticky=Tk.W+Tk.E)
+        try:
+            options = self.show_tables()
+            var = Tk.StringVar()
+            var.set(options[0])
+            self.tables_list = Tk.OptionMenu(self.parent, 
+                                             var,
+                                             *options,
+                                             command=self.select_table)\
+                                            .grid(row=1,
+                                                  column=4,
+                                                  columnspan=2,
+                                                  sticky=Tk.W+Tk.E)
+        except Exception, ex:
+            logging.error(ex)
 
     def select_table(self, table):
-        """Set the current table to table."""
+        """Set the current table to table.
+        Args: table-> The MySQL table to view and manipulate
+        Rets: None
+        """
         try:
             self.table = table[0]
             self.populate_display()
@@ -353,11 +371,17 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def populate_display(self):
-        # Clear the listbox
-        self.data_display.delete(0, Tk.END)
-        self.data = self.select_rows(self.table)
-        for i in range(len(self.data)):
-            self.data_display.insert(i+1, self.data[i])
+        """Populate the display listbox with the column names and row data
+        Args: None
+        Rets: None"""
+        try:
+            self.data_display.delete(0, Tk.END)
+            self.data = self.select_rows(self.table)
+            self.data_display.insert(0, self.format_column_names())
+            for i in range(len(self.data)):
+                self.data_display.insert(i+1, self.data[i])
+        except Exception, ex:
+            logging.error(ex)
 
     def open_new_connection(self, host='localhost', user='root',
                         password='passw0rd', database='databuild'):
@@ -429,23 +453,31 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
             return None
 
-    def create_table(self, **kwargs):
-        """Create a new table in the database."""
+    def create_table(self):
+        """Create a new table in the database.
+        Args:
+        Rets: 
+        """
         try:
-            sql = 'CREATE TABLE ' + kwargs[0]
-            #TODO
-        except:
-            #TODO
-            traceback.print_exc()
+            raise NotImplementedError()
+        except Exception, ex:
+            logging.error(ex)
 
     def describe_table(self, table):
         """Display table organization."""
         try:
             sql = 'DESCRIBE ' + table + ';'
             self.execute_command(sql)
-        except:
-            #TODO
-            traceback.print_exc()
+        except Exception, ex:
+            logging.error(ex)
+
+    def format_column_names(self):
+        """Flatten the nested column names into a list for insertion."""
+        try:
+            column_names = self.get_column_names(self.table)
+            return [element for tupl in column_names for element in tupl]
+        except Exception, ex:
+            logging.error(ex)
 
     def select_rows(self, table, where=''):
         """Select rows from the table."""
@@ -459,8 +491,8 @@ class Databuild(Tk.Frame):
             sql += ';'
             # return the values from the executed command
             return self.execute_command(sql)
-        except:
-            traceback.print_exc()
+        except Exception, ex:
+            logging.error(ex)
             return None
 
     def insert_row(self, table, values):
@@ -575,6 +607,20 @@ class InsertColumnDialog(Tk.Toplevel):
             self.parent.show()
         except Exception, ex:
             logging.error(ex)
+
+class DescribeTableDialog(Tk.Toplevel):
+    """Dialog Frame displaying table properties."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self)
+        self.parent = parent
+
+    def show_table_properties(self):
+        properties = Tk.Listbox(self, height=10, width=50).pack()
+        data = parent.describe_table(parent.table)
+        properties.delete(0, Tk.END)
+        for i, item in enumerate(data):
+            properties.insert(i+1, item)
 
 def main():
     root = Tk.Tk()

@@ -3,3 +3,18 @@ ERROR:root:()
 ERROR:root:'NoneType' object has no attribute '__getitem__'
 ERROR:root:'NoneType' object has no attribute '__getitem__'
 ERROR:root:Databuild instance has no attribute 'init_ui_file_menu'
+ERROR:root:global name 'get_column_names' is not defined
+ERROR:root:global name 'get_column_names' is not defined
+ERROR:root:global name 'get_column_names' is not defined
+ERROR:root:global name 'get_column_names' is not defined
+ERROR:root:global name 'get_column_names' is not defined
+ERROR:root:global name 'get_column_names' is not defined
+ERROR:root:sequence item 0: expected string, tuple found
+ERROR:root:sequence item 0: expected string, tuple found
+ERROR:root:sequence item 0: expected string, tuple found
+ERROR:root:not enough arguments for format string
+ERROR:root:not enough arguments for format string
+ERROR:root:tuple indices must be integers, not tuple
+ERROR:root:tuple indices must be integers, not tuple
+ERROR:root:tuple indices must be integers, not tuple
+ERROR:root:tuple indices must be integers, not tuple
