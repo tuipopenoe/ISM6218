@@ -157,6 +157,8 @@ class Databuild(Tk.Frame):
             self.init_ui_relationships_menu()
             # Insert Menu
             self.init_ui_insert_menu()
+            # View Menu
+            self.init_ui_view_menu()
             # Set menu bar for root frame 
             self.parent.config(menu=self.menu_bar)
         except Exception, ex:
@@ -200,13 +202,28 @@ class Databuild(Tk.Frame):
         """
         try:
             self.rel_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.rel_menu.add_command(label='View Relationsips',
+            self.rel_menu.add_command(label='View Relationships',
                                       command=self.view_relationships_dialog)
             self.rel_menu.add_separator()
             self.rel_menu.add_command(label='Describe Table',
                                       command=self.describe_table_dialog)
             self.menu_bar.add_cascade(label='Relationships',
                                       menu=self.rel_menu)
+        except Exception, ex:
+            logging.error(ex)
+
+    def init_ui_view_menu(self):
+        """Initialize the menu for viewing application logs.
+        Args: None
+        Rets: None
+        """
+        try:
+            self.log_menu = Tk.Menu(self.menu_bar, tearoff=0)
+            self.log_menu.add_command(label='View Log',
+                                      command=self.view_log)
+            self.log_menu.add_separator()
+            self.menu_bar.add_cascade(label='View',
+                                      menu=self.log_menu)
         except Exception, ex:
             logging.error(ex)
 
@@ -277,8 +294,12 @@ class Databuild(Tk.Frame):
             logging.error(ex)
 
     def view_relationships_dialog(self):
+        """Create a dialog box that describes the column layout.
+        Args: None
+        Rets: None
+        """
         try:
-            raise NotImplementedError()
+            column_relationship_dialog = ColumnRelationshipDialog(self)
         except Exception, ex:
             logging.error(ex)
 
@@ -442,7 +463,7 @@ class Databuild(Tk.Frame):
         Rets: Output from the MySQL query
         """
         try:
-            sql = 'CREATE TABLE IF NOT EXISTS %s' % table
+            sql = 'CREATE TABLE IF NOT EXISTS %s;' % table
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
@@ -450,7 +471,18 @@ class Databuild(Tk.Frame):
     def describe_table(self, table):
         """Display table organization."""
         try:
-            sql = 'DESCRIBE ' + table + ';'
+            sql = 'DESCRIBE %s;' % table
+            return self.execute_command(sql)
+        except Exception, ex:
+            logging.error(ex)
+
+    def show_column_relationships(self, table):
+        """Display the relationships between columns in a table.
+        Args: table-> The table to display the relationships from
+        Rets: Output from the SQL query.
+        """
+        try:
+            sql = 'SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS;'
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
@@ -559,7 +591,7 @@ class Databuild(Tk.Frame):
 
     def view_log(self):
         try:
-            raise NotImplementedError()
+            view_log = ViewLogDialog(self)
         except Exception, ex:
             logging.error(ex)
 
@@ -609,6 +641,7 @@ class InsertRowDialog(Tk.Toplevel):
             traceback.print_exc()
             logging.error(ex)
 
+
 class InsertColumnDialog(Tk.Toplevel):
     """Dialog frame to insert columns into a table."""
     def __init__(self, parent):
@@ -637,8 +670,7 @@ class InsertColumnDialog(Tk.Toplevel):
             def _insert_column():
                 c_name = ent_name.get()
                 c_type = ent_type.get()
-                logging.info(c_name, c_type)
-                #self.parent.insert_column(self.parent.table, c_name, c_type)
+                self.parent.insert_column(self.parent.table, c_name, c_type)
                 self.destroy()
                 self.parent.populate_display()
             b_ins = Tk.Button(self,
@@ -654,9 +686,9 @@ class DescribeTableDialog(Tk.Toplevel):
     """Dialog Frame displaying table properties."""
     def __init__(self, parent):
         """Constructor"""
-        Tk.Toplevel.__init__(self)
-        logging.info(parent)
+        Tk.Toplevel.__init__(self, parent)
         self.parent = parent
+        self.title('Table Properties')
         self.show_table_properties()
 
     def show_table_properties(self):
@@ -665,15 +697,67 @@ class DescribeTableDialog(Tk.Toplevel):
         Rets: None
         """
         try:
-            properties = Tk.Listbox(self.parent, height=10, width=50)
+            properties = Tk.Listbox(self, height=10, width=50)
             data = self.parent.describe_table(self.parent.table)
             data = self.parent.flatten_nested_hierarchy(data)
-            logging.info(self.parent.describe_table(self.parent.table))
             properties.delete(0, Tk.END)
             for i, item in enumerate(data):
                 properties.insert(i+1, data[i])
                 logging.info(data[i])
             properties.pack()
+        except Exception, ex:
+            logging.error(ex)
+
+
+class ColumnRelationshipDialog(Tk.Toplevel):
+    """Dialog Frame displaying column relationship"""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self, parent)
+        self.parent = parent
+        self.title('Column Relationships')
+        self.show_column_relationships()
+
+    def show_column_relationships(self):
+        """Display the column relationships.
+        Args: None
+        Rets: None
+        """
+        try:
+            relationships = Tk.Listbox(self, height=10, width=50)
+            data = self.parent.show_column_relationships(self.parent.table)
+            data = self.parent.flatten_nested_hierarchy(data)
+            logging.info(data)
+            relationships.delete(0, Tk.END)
+            for i, item in enumerate(data):
+                relationships.insert(i+1, data[i])
+                logging.info(data[i])
+            relationships.pack()
+        except Exception, ex:
+            logging.error(ex)
+
+
+class ViewLogDialog(Tk.Toplevel):
+    """Dialog Frame displaying the application log."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self, parent)
+        self.parent = parent
+        self.title('Log')
+        self.view_log()
+
+    def view_log(self):
+        """Display the application log.
+        Args: None
+        Rets: None
+        """
+        try:
+            with open('databuild.log', 'r') as f:
+                data = f.readlines()
+                log = Tk.Listbox(self, height=20, width=50)
+                for i, item in enumerate(data):
+                    log.insert(i+1, data[i])
+                log.pack()
         except Exception, ex:
             logging.error(ex)
 
