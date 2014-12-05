@@ -12,6 +12,7 @@ import logging
 
 class Databuild(Tk.Frame):
     def __init__(self, parent):
+        """Constructor"""
         # Call the superclass __init__ method to initialize the Frame
         Tk.Frame.__init__(self, parent)
         # Initialize logging
@@ -27,6 +28,33 @@ class Databuild(Tk.Frame):
         # Initialize the data displayed in the GUI
         self.init_display()
 
+################################################################################
+#################### Execute Command ###########################################
+################################################################################
+
+    def execute_command(self, sql):
+        """Execute a MySQL command upon the database.
+        Args: sql -> The SQL statement to be executed.
+        Rets: Returns all rows of the query as a list of tuples.
+        """
+        try:
+            # Execute the sql command
+            self.cursor.execute(sql)
+            # Commit any changes to the db
+            self.db.commit()
+            # return query output as a list of tuples
+            return self.cursor.fetchall()
+        except Exception, ex:
+            # If there is an error, rollback the changes
+            self.db.rollback()
+            logging.error(ex)
+            traceback.print_exc()
+            return None
+
+################################################################################
+#################### Init ######################################################
+################################################################################
+
     def init_connection(self):
         """Initialize the MySQL database connection.
         Args: None
@@ -36,6 +64,7 @@ class Databuild(Tk.Frame):
             self.open_connection()
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def init_data(self):
         """Initialize the class variables.
@@ -61,6 +90,7 @@ class Databuild(Tk.Frame):
             self.table = 'databuild'
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def init_ui(self):
         """Initialize the application GUI elements.
@@ -86,24 +116,11 @@ class Databuild(Tk.Frame):
             self.populate_display()
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
-    def execute_command(self, sql):
-        """Execute a MySQL command upon the database.
-        Args: sql -> The SQL statement to be executed.
-        Rets: Returns all rows of the query as a list of tuples.
-        """
-        try:
-            # Execute the sql command
-            self.cursor.execute(sql)
-            # Commit any changes to the db
-            self.db.commit()
-            # return query output as a list of tuples
-            return self.cursor.fetchall()
-        except Exception, ex:
-            # If there is an error, rollback the changes
-            self.db.rollback()
-            logging.error(ex)
-            return None
+################################################################################
+#################### Connections ###############################################
+################################################################################
 
     def open_connection(self, host='localhost', user='root',
                         password='passw0rd', database='databuild'):
@@ -128,6 +145,7 @@ class Databuild(Tk.Frame):
             self.cursor = self.db.cursor()
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def close_connection(self):
         """Disconnect from the MySQL database.
@@ -140,7 +158,34 @@ class Databuild(Tk.Frame):
             tkMessageBox.showinfo("", "Connection closed")
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
+    def open_new_connection(self, host='localhost', user='root',
+                        password='passw0rd', database='databuild'):
+        """Open a new connection and display a message box if successful.
+        Args: host-> IP address of the host for the database
+              user-> The user for the MySQL database
+              password-> The password for the MySQL database
+              database-> The default database in MySQL
+        Rets: None
+        """
+        try:
+            # Open a new connection
+            self.open_connection(host, user, password, database)
+            # Populate the tables from the new database.
+            self.populate_table_dropdown()
+            # Display message if connection succesful.
+            tkMessageBox.showinfo("", "Connection to database %s opened"
+                                  % self.database)
+        except Exception, ex:
+            tk.MessageBox.showinfo("", "Failed to connect to %s database"
+                                   % self.database)
+            logging.error(ex)
+            traceback.print_exc()
+
+################################################################################
+#################### Init Menus ################################################
+################################################################################
     def init_ui_menus(self):
         """Initialize the menus for the GUI.
         Args: None
@@ -157,14 +202,25 @@ class Databuild(Tk.Frame):
             self.init_ui_relationships_menu()
             # Insert Menu
             self.init_ui_insert_menu()
+            # Update Menu
+            self.init_ui_update_menu()
             # View Menu
             self.init_ui_view_menu()
+            # Delete Menu
+            self.init_ui_delete_menu()
+            # Help Menu
+            self.init_ui_help_menu()
             # Set menu bar for root frame 
             self.parent.config(menu=self.menu_bar)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def init_ui_file_menu(self):
+        """Initialize the menu for application commands.
+        Args: None
+        Rets: None
+        """
         try:
             self.file_menu = Tk.Menu(self.menu_bar, tearoff=0)
             #TODO
@@ -173,9 +229,10 @@ class Databuild(Tk.Frame):
                                       menu=self.file_menu)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def init_ui_connection_menu(self):
-        """Initialize the GUI elements for opening and closing connections.
+        """Initialize menu for viewing opening and closing database connections.
         Args: None
         Rets: None
         """
@@ -189,11 +246,12 @@ class Databuild(Tk.Frame):
                                        command=self.close_connection)
             self.conn_menu.add_separator()
             self.conn_menu.add_command(label='View Connection Info',
-                                       command=self.view_connection_info)
+                                       command=self.view_connection_info_dialog)
             self.menu_bar.add_cascade(label='Connections',
                                       menu=self.conn_menu)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def init_ui_relationships_menu(self):
         """Initialize the menu for viewing database relationships.
@@ -211,6 +269,43 @@ class Databuild(Tk.Frame):
                                       menu=self.rel_menu)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
+
+    def init_ui_insert_menu(self):
+        """Initialize the menu for inserting rows, columns, and tables.
+        Args: None
+        Rets: None
+        """
+        try:
+            self.insert_menu = Tk.Menu(self.menu_bar, tearoff=0)
+            self.insert_menu.add_command(label='Insert Row',
+                                         command=self.insert_row_dialog)
+            self.insert_menu.add_separator()
+            self.insert_menu.add_command(label='Insert Column',
+                                         command=self.insert_column_dialog)
+            self.menu_bar.add_cascade(label='Insert',
+                                      menu=self.insert_menu)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def init_ui_update_menu(self):
+        """Initialize the menu for updating rows, columns, and tables.
+        Args: None
+        Rets: None
+        """
+        try:
+            self.update_menu = Tk.Menu(self.menu_bar, tearoff=0)
+            self.update_menu.add_command(label='Update Row',
+                                         command=self.update_row_dialog)
+            self.update_menu.add_separator()
+            self.update_menu.add_command(label='Update Column',
+                                         command=self.update_column_dialog)
+            self.menu_bar.add_cascade(label='Update',
+                                      menu=self.update_menu)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
 
     def init_ui_view_menu(self):
         """Initialize the menu for viewing application logs.
@@ -218,25 +313,64 @@ class Databuild(Tk.Frame):
         Rets: None
         """
         try:
-            self.log_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.log_menu.add_command(label='View Log',
-                                      command=self.view_log)
-            self.log_menu.add_separator()
+            self.view_menu = Tk.Menu(self.menu_bar, tearoff=0)
+            self.view_menu.add_command(label='View Log',
+                                      command=self.view_log_dialog)
+            self.view_menu.add_separator()
             self.menu_bar.add_cascade(label='View',
-                                      menu=self.log_menu)
+                                      menu=self.view_menu)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
+
+    def init_ui_delete_menu(self):
+        """Initialize the menu for deleting rows, columns, and tables.
+        Args: None
+        Rets: None
+        """
+        try:
+            self.delete_menu = Tk.Menu(self.menu_bar, tearoff=0)
+            self.delete_menu.add_command(label='Delete Row',
+                                         command=self.delete_row_dialog)
+            self.delete_menu.add_separator()
+            self.delete_menu.add_command(label='Delete Column',
+                                         command=self.delete_column_dialog)
+            self.menu_bar.add_cascade(label='Delete', menu=self.delete_menu)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def init_ui_help_menu(self):
+        """Initialize the help menu.
+        Args: None
+        Rets: None
+        """
+        try:
+            self.help_menu = Tk.Menu(self.menu_bar, tearoff=0)
+            self.help_menu.add_command(label='Help',
+                                       command=self.help_menu_dialog)
+            self.help_menu.add_separator()
+            self.help_menu.add_command(label='Application Info',
+                                       command=self.app_info_dialog)
+            self.menu_bar.add_cascade(label='Help', menu=self.help_menu)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
 
     def init_ui_tables(self):
+        """Load the UI dropdown list that displays the database tables.
+        Args: None
+        Rets: None
+        """
         try:
             # Tables in the Database
             self.table_label = Tk.Label(self.parent, text='Current Table: ')\
                                         .grid(row=1, column=3, sticky=Tk.W+Tk.E)
             #TODO change this as data will be initialized
             self.tables_list = None
-
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def init_ui_display(self):
         try:
@@ -249,19 +383,11 @@ class Databuild(Tk.Frame):
             yscroll.grid(row=2, column=5, sticky='ns')
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
-    def init_ui_insert_menu(self):
-        try:
-            self.insert_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.insert_menu.add_command(label='Insert Row',
-                                         command=self.insert_row_dialog)
-            self.insert_menu.add_separator()
-            self.insert_menu.add_command(label='Insert Column',
-                                         command=self.insert_column_dialog)
-            self.menu_bar.add_cascade(label='Insert',
-                                      menu=self.insert_menu)
-        except Exception, ex:
-            logging.error(ex)
+################################################################################
+#################### Open Dialogs ##############################################
+################################################################################
 
     def open_connection_dialog(self):
         t = Tk.Toplevel(self)
@@ -287,11 +413,12 @@ class Databuild(Tk.Frame):
         b_conn = Tk.Button(t, text='Connect', command=_open_connection)\
                           .grid(row=4, column=0, columnspan=2)
 
-    def view_connection_info(self):
+    def view_connection_info_dialog(self):
         try:
-            raise NotImplementedError()
+            connection_info_dialog = ConnectionInfoDialog(self)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def view_relationships_dialog(self):
         """Create a dialog box that describes the column layout.
@@ -302,6 +429,7 @@ class Databuild(Tk.Frame):
             column_relationship_dialog = ColumnRelationshipDialog(self)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def insert_row_dialog(self):
         """Create a dialog to insert rows into a table.
@@ -312,12 +440,14 @@ class Databuild(Tk.Frame):
             insert_row_dialog = InsertRowDialog(self)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def insert_column_dialog(self):
         try:
             insert_column_dialog = InsertColumnDialog(self)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def describe_table_dialog(self):
         """Create a dialog box that describes the table layout.
@@ -328,6 +458,11 @@ class Databuild(Tk.Frame):
             describe_table_dialog = DescribeTableDialog(self)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
+
+################################################################################
+#################### Populate Display ##########################################
+################################################################################
 
     def populate_table_dropdown(self):
         try:
@@ -344,16 +479,6 @@ class Databuild(Tk.Frame):
                                                   sticky=Tk.W+Tk.E)
         except Exception, ex:
             logging.error(ex)
-
-    def select_table(self, table):
-        """Set the current table to table.
-        Args: table-> The MySQL table to view and manipulate
-        Rets: None
-        """
-        try:
-            self.table = table[0]
-            self.populate_display()
-        except:
             traceback.print_exc()
 
     def populate_display(self):
@@ -369,28 +494,23 @@ class Databuild(Tk.Frame):
                 self.data_display.insert(i+1, self.data[i])
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
-    def open_new_connection(self, host='localhost', user='root',
-                        password='passw0rd', database='databuild'):
-        """Open a new connection and display a message box if successful.
-        Args: host-> IP address of the host for the database
-              user-> The user for the MySQL database
-              password-> The password for the MySQL database
-              database-> The default database in MySQL
+################################################################################
+#################### Select Data ###############################################
+################################################################################
+
+    def select_table(self, table):
+        """Set the current table to table.
+        Args: table-> The MySQL table to view and manipulate
         Rets: None
         """
         try:
-            # Open a new connection
-            self.open_connection(host, user, password, database)
-            # Populate the tables from the new database.
-            self.populate_table_dropdown()
-            # Display message if connection succesful.
-            tkMessageBox.showinfo("", "Connection to database %s opened"
-                                  % self.database)
-        except Exception, ex:
-            tk.MessageBox.showinfo("", "Failed to connect to %s database"
-                                   % self.database)
-            logging.error(ex)
+            self.table = table[0]
+            self.populate_display()
+        except:
+            traceback.print_exc()
+
 
     def select_database(self, database='databuild'):
         """Select which database to use from the MySQL instance
@@ -403,6 +523,11 @@ class Databuild(Tk.Frame):
             self.open_connection(database=database)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
+
+################################################################################
+#################### SQL Queries ###############################################
+################################################################################
 
     def show_databases(self):
         """Show which databases are available.
@@ -414,8 +539,9 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
-    def create_database(self, database):
+    def insert_database(self, database):
         """Create a new database in the MySQL instance
         Args: database-> Name of the database to create
         Rets: Result of the SQL query
@@ -425,6 +551,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def use_database(self, database='databuild'):
         """Select a database to use.
@@ -436,6 +563,7 @@ class Databuild(Tk.Frame):
             self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def drop_database(self, database):
         """Delete a database from the MySQL instance
@@ -446,6 +574,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def show_tables(self):
         """Show available tables in the MySQL database
@@ -456,6 +585,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def create_table(self, table):
         """Create a new table in the database.
@@ -467,6 +597,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def describe_table(self, table):
         """Display table organization."""
@@ -475,6 +606,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def show_column_relationships(self, table):
         """Display the relationships between columns in a table.
@@ -486,6 +618,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def flatten_nested_hierarchy(self, hierarchy):
         """Flatten the hiearchy into a single list.
@@ -496,6 +629,7 @@ class Databuild(Tk.Frame):
             return [element for tupl in hierarchy for element in tupl]
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def select_rows(self, table, where=''):
         """Select * rows from table, with where clause.
@@ -512,6 +646,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
             return None
 
     def insert_row(self, table, values):
@@ -536,6 +671,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def update_row(self, table, values):
         """Update records in a table.
@@ -547,6 +683,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def delete_row(self, table, column_name, value):
         """Delete a row from the table.
@@ -559,8 +696,9 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
-    def add_column(self, table, column_name, column_type):
+    def insert_column(self, table, column_name, column_type):
         """Add a column to a table
         Args: table->Table name to add a column to
               column_name->Name of the column to be added
@@ -571,6 +709,7 @@ class Databuild(Tk.Frame):
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
     def delete_column(self, table, column_name):
         """Delete a column from a table."""
@@ -588,12 +727,19 @@ class Databuild(Tk.Frame):
                 f.write(data)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
-    def view_log(self):
+    def view_log_dialog(self):
         try:
-            view_log = ViewLogDialog(self)
+            view_log_dialog = ViewLogDialog(self)
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
+
+
+################################################################################
+#################### Dialog Classes ############################################
+################################################################################
 
 class InsertRowDialog(Tk.Toplevel):
     """Dialog frame to insert rows into a table."""
@@ -640,6 +786,7 @@ class InsertRowDialog(Tk.Toplevel):
         except Exception, ex:
             traceback.print_exc()
             logging.error(ex)
+            traceback.print_exc()
 
 
 class InsertColumnDialog(Tk.Toplevel):
@@ -680,6 +827,7 @@ class InsertColumnDialog(Tk.Toplevel):
         except Exception, ex:
             traceback.print_exc()
             logging.error(ex)
+            traceback.print_exc()
 
 
 class DescribeTableDialog(Tk.Toplevel):
@@ -707,6 +855,7 @@ class DescribeTableDialog(Tk.Toplevel):
             properties.pack()
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
 
 class ColumnRelationshipDialog(Tk.Toplevel):
@@ -735,6 +884,7 @@ class ColumnRelationshipDialog(Tk.Toplevel):
             relationships.pack()
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
 
 
 class ViewLogDialog(Tk.Toplevel):
@@ -744,9 +894,9 @@ class ViewLogDialog(Tk.Toplevel):
         Tk.Toplevel.__init__(self, parent)
         self.parent = parent
         self.title('Log')
-        self.view_log()
+        self.view_log_dialog()
 
-    def view_log(self):
+    def view_log_dialog(self):
         """Display the application log.
         Args: None
         Rets: None
@@ -760,6 +910,35 @@ class ViewLogDialog(Tk.Toplevel):
                 log.pack()
         except Exception, ex:
             logging.error(ex)
+            traceback.print_exc()
+
+class ConnectionInfoDialog(Tk.Toplevel):
+    """Dialog Frame displaying the connection information."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self, parent)
+        self.parent = parent
+        self.title('Connection Info')
+        self.view_connection_info()
+
+    def view_connection_info(self):
+        """Display the connection info."""
+        try:
+            lbl_host = Tk.Label(self, text='Host: ').pack()
+            lbl_host2 = Tk.Label(self, text=self.parent.host).pack()
+            lbl_user = Tk.Label(self, text='User: ').pack()
+            lbl_user2 = Tk.Label(self, text=self.parent.user).pack()
+            lbl_pass = Tk.Label(self, text='Password: ').pack()
+            lbl_pass2 = Tk.Label(self, text=self.parent.password).pack()
+            lbl_data = Tk.Label(self, text='Database: ').pack()
+            lbl_data2 = Tk.Label(self, text=self.parent.database).pack()
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+################################################################################
+#################### Main Method ###############################################
+################################################################################
 
 def main():
     root = Tk.Tk()

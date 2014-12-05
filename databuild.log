@@ -439,3 +439,9 @@ INFO:root:
 INFO:root:None
 INFO:root:
 ERROR:root:
+ERROR:root:Databuild instance has no attribute 'update_row_dialog'
+ERROR:root:Databuild instance has no attribute 'delete_row_dialog'
+ERROR:root:Databuild instance has no attribute 'help_menu_dialog'
+ERROR:root:Databuild instance has no attribute 'update_row_dialog'
+ERROR:root:Databuild instance has no attribute 'delete_row_dialog'
+ERROR:root:Databuild instance has no attribute 'help_menu_dialog'
