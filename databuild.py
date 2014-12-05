@@ -19,6 +19,8 @@ class Databuild(Tk.Frame):
         logging.basicConfig(filename='databuild.log', level=logging.INFO)
         # Set the parent Tkinter.Frame
         self.parent = parent
+        # Set minimum size
+        self.parent.minsize(width=640, height=480)
         # Initialize the class variables
         self.init_data()
         # Initialize the MySQL database connection
@@ -85,8 +87,10 @@ class Databuild(Tk.Frame):
             self.database = None
             # Store data from queries
             self.data = None
-            self.tables = None
+            # Currently Selected Row, Column, Table
             self.current_table = None
+            self.current_row = None
+            self.current_column = None
             self.table = 'databuild'
         except Exception, ex:
             logging.error(ex)
@@ -420,17 +424,6 @@ class Databuild(Tk.Frame):
             logging.error(ex)
             traceback.print_exc()
 
-    def view_relationships_dialog(self):
-        """Create a dialog box that describes the column layout.
-        Args: None
-        Rets: None
-        """
-        try:
-            column_relationship_dialog = ColumnRelationshipDialog(self)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
     def insert_row_dialog(self):
         """Create a dialog to insert rows into a table.
         Args: None
@@ -445,6 +438,59 @@ class Databuild(Tk.Frame):
     def insert_column_dialog(self):
         try:
             insert_column_dialog = InsertColumnDialog(self)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def update_row_dialog(self):
+        try:
+            update_row_dialog = UpdateRowDialog(self)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def update_column_dialog(self):
+        try:
+            update_column_dialog = UpdateColumnDialog(self)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def delete_row_dialog(self):
+        try:
+            delete_row_dialog = DeleteRowDialog(self)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def delete_column_dialog(self):
+        try:
+            delete_column_dialog = DeleteColumnDialog(self)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def help_menu_dialog(self):
+        try:
+            help_menu_dialog = HelpMenuDialog(self)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def app_info_dialog(self):
+        try:
+            app_info_dialog = AppInfoDialog(self)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def view_relationships_dialog(self):
+        """Create a dialog box that describes the column layout.
+        Args: None
+        Rets: None
+        """
+        try:
+            column_relationship_dialog = ColumnRelationshipDialog(self)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -784,10 +830,8 @@ class InsertRowDialog(Tk.Toplevel):
                               command=_insert_row)\
                              .grid(row=i+1, column=1, sticky=Tk.W+Tk.E)
         except Exception, ex:
-            traceback.print_exc()
             logging.error(ex)
             traceback.print_exc()
-
 
 class InsertColumnDialog(Tk.Toplevel):
     """Dialog frame to insert columns into a table."""
@@ -825,10 +869,147 @@ class InsertColumnDialog(Tk.Toplevel):
                               command=_insert_column)\
                               .grid(row=2, column=1, sticky=Tk.W+Tk.E)
         except Exception, ex:
-            traceback.print_exc()
             logging.error(ex)
             traceback.print_exc()
 
+class UpdateRowDialog(Tk.Toplevel):
+    """Dialog frame to update rows into a table."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self, parent)
+        # Set a reference to the main databuild Frame
+        self.parent = parent
+        self.title('Update Row')
+        self.update_row()
+
+    def update_row(self):
+        """Update a row into the parent table.
+        Args: None
+        Rets: None
+        """
+        try:
+            column_names = list(self.parent.get_column_names(self.parent.table))
+            entry = {}
+            label = {}
+            i = 0
+            for name in column_names:
+                e = Tk.Entry(self)
+                e.grid(column=1, sticky=Tk.E)
+                entry[name] = e
+                lb = Tk.Label(self, text=name)
+                lb.grid(row=i, column=0, sticky=Tk.W)
+                label[name] = lb
+                i += 1
+
+            def _update_row():
+                values = []
+                for name in column_names:
+                    values.append(entry[name].get())
+                values = ', '.join(map(lambda x: "'" + x + "'", values))
+                self.parent.update_row(self.parent.table, values)
+                self.destroy()
+                self.parent.populate_display()
+
+            b_ins = Tk.Button(self,
+                              text='Update Row',
+                              command=_update_row)\
+                             .grid(row=i+1, column=1, sticky=Tk.W+Tk.E)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+class UpdateColumnDialog(Tk.Toplevel):
+    """Dialog frame to update columns into a table."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self)
+        # Set a reference to the main databuild Frame
+        self.parent = parent
+        self.title("Update Column")
+        self.update_column()
+
+    def update_column(self):
+        """Insert a column into the table
+        Args: None
+        Rets: None
+        """
+        try:
+            lbl_name = Tk.Label(self, text='Enter a column name: ')
+            lbl_name.grid(row=0, column=0, sticky=Tk.W+Tk.E)
+            ent_name = Tk.Entry(self)
+            ent_name.grid(row=0, column=1, sticky=Tk.W+Tk.E)
+            lbl_type = Tk.Label(self, text='Enter a column type: ')
+            lbl_type.grid(row=1, column=0, sticky=Tk.W+Tk.E)
+            ent_type = Tk.Entry(self)
+            ent_type.grid(row=1, column=1, sticky=Tk.W+Tk.E)
+
+            def _update_column():
+                c_name = ent_name.get()
+                c_type = ent_type.get()
+                self.parent.update_column(self.parent.table, c_name, c_type)
+                self.destroy()
+                self.parent.populate_display()
+            b_ins = Tk.Button(self,
+                              text='Update Column',
+                              command=_update_column)\
+                              .grid(row=2, column=1, sticky=Tk.W+Tk.E)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+class DeleteRowDialog(Tk.Toplevel):
+    """Dialog confirmation for deleting a row."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self)
+        self.parent = parent
+        self.title('Delete Row')
+        self.delete_row()
+
+    def delete_row(self):
+        """Delete a row from the table.
+        Args: None
+        Rets: None
+        """
+        try:
+            lbl_confirm = Tk.Label(self, text='Confirm Delete Row?').pack()
+            btn_cancel = Tk.Label(self, text='Cancel',
+                                  command=self.destroy).pack
+            btn_confirm = Tk.Button(self, text='Delete Row',
+                                    command=_delete_row)
+
+            def _delete_row():
+                self.parent.delete_row(self.parent.current_row)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+class DeleteColumnDialog(Tk.Toplevel):
+    """Dialog confirmation for deleting a column."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self)
+        self.parent = parent
+        self.title('Delete column')
+        self.delete_column()
+
+    def delete_column(self):
+        """Delete a column from the table.
+        Args: None
+        Rets: None
+        """
+        try:
+            lbl_confirm = Tk.Label(self, text='Confirm Delete Column?').pack()
+            btn_cancel = Tk.Label(self, text='Cancel',
+                                  command=self.destroy).pack
+            btn_confirm = Tk.Button(self, text='Delete Column',
+                                    command=_delete_column)
+
+            def _delete_column():
+                self.parent.delete_column(self.parent.current_column)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
 
 class DescribeTableDialog(Tk.Toplevel):
     """Dialog Frame displaying table properties."""
@@ -857,7 +1038,6 @@ class DescribeTableDialog(Tk.Toplevel):
             logging.error(ex)
             traceback.print_exc()
 
-
 class ColumnRelationshipDialog(Tk.Toplevel):
     """Dialog Frame displaying column relationship"""
     def __init__(self, parent):
@@ -885,7 +1065,6 @@ class ColumnRelationshipDialog(Tk.Toplevel):
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
-
 
 class ViewLogDialog(Tk.Toplevel):
     """Dialog Frame displaying the application log."""
@@ -935,6 +1114,41 @@ class ConnectionInfoDialog(Tk.Toplevel):
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
+
+class HelpMenuDialog(Tk.Toplevel):
+    """Dialog frame displaying help topics."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self, parent)
+        self.parent = parent
+        self.title('Help Info')
+        self.view_help_info()
+
+    def view_help_info(self):
+        """Display the connection info."""
+        try:
+            lbl_host = Tk.Label(self, text='Help: ').pack()
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+class AppInfoDialog(Tk.Toplevel):
+    """Dialog frame displaying help topics."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self, parent)
+        self.parent = parent
+        self.title('App Info')
+        self.view_help_info()
+
+    def view_help_info(self):
+        """Display the connection info."""
+        try:
+            lbl_host = Tk.Label(self, text='Copyright 2014').pack()
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
 
 ################################################################################
 #################### Main Method ###############################################
