@@ -5,6 +5,7 @@ import paramiko
 import urllib2
 import json
 import Tkinter as Tk
+import ttk
 import tkMessageBox
 import MySQLdb
 import traceback
@@ -103,19 +104,29 @@ class Databuild(Tk.Frame):
         """
         # Set the title
         self.parent.title('Databuild 2.0')
-        #self.parent.geometry('1280x720')
         # Initialize the UI Menus
         self.init_ui_menus()
-        # Initialize the table selector dropdown
-        self.init_ui_tables()
-        # Initialize the data display
-        self.init_ui_display()
+        # Initialize the main window display
+        self.init_display()
 
     def init_display(self):
-        """Fetch the initial data to display upon application start.
+        """Load the UI dropdown list that displays the database tables.
         Args: None
-        Rets: None"""
+        Rets: None
+        """
         try:
+            # Tables in the Database
+            self.table_label = Tk.Label(self.parent, text='Current Table: ')\
+                                        .grid(row=0, column=3, sticky=Tk.W+Tk.E)
+            #TODO change this as data will be initialized
+            self.tables_list = None
+            # Data Display
+            self.display = ttk.Treeview(self.parent)
+            # Scrollbar
+            yscroll = Tk.Scrollbar(command=self.display.yview,
+                                   orient=Tk.VERTICAL)
+            yscroll.grid(row=1, column=5, sticky='ns')
+            # Initialize the displays with data
             self.populate_table_dropdown()
             self.populate_display()
         except Exception, ex:
@@ -361,34 +372,6 @@ class Databuild(Tk.Frame):
             logging.error(ex)
             traceback.print_exc()
 
-    def init_ui_tables(self):
-        """Load the UI dropdown list that displays the database tables.
-        Args: None
-        Rets: None
-        """
-        try:
-            # Tables in the Database
-            self.table_label = Tk.Label(self.parent, text='Current Table: ')\
-                                        .grid(row=1, column=3, sticky=Tk.W+Tk.E)
-            #TODO change this as data will be initialized
-            self.tables_list = None
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_display(self):
-        try:
-            # Display Data
-            self.data_display = Tk.Listbox(self.parent, height=20, width=50)
-            self.data_display.grid(row=2, column=0, columnspan=5,
-                                   sticky=Tk.W+Tk.E)
-            yscroll = Tk.Scrollbar(command=self.data_display.yview,
-                                   orient=Tk.VERTICAL)
-            yscroll.grid(row=2, column=5, sticky='ns')
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
 ################################################################################
 #################### Open Dialogs ##############################################
 ################################################################################
@@ -519,10 +502,10 @@ class Databuild(Tk.Frame):
                                              var,
                                              *options,
                                              command=self.select_table)\
-                                            .grid(row=1,
-                                                  column=4,
-                                                  columnspan=2,
-                                                  sticky=Tk.W+Tk.E)
+                                                .grid(row=0,
+                                                      column=4,
+                                                      columnspan=2,
+                                                      sticky=Tk.W+Tk.E)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -532,15 +515,24 @@ class Databuild(Tk.Frame):
         Args: None
         Rets: None"""
         try:
-            self.data_display.delete(0, Tk.END)
+            #self.display.delete(0, Tk.END)
             self.data = self.select_rows(self.table)
-            self.data_display.insert(0, self.flatten_nested_hierarchy(
-                self.get_column_names(self.table)))
-            for i in range(len(self.data)):
-                self.data_display.insert(i+1, self.data[i])
+            list_columns = self.get_column_names(self.table)
+            # Accept tuple of column names
+            self.display['columns'] = list_columns
+
+            for column in list_columns:
+                self.display.column(column, width=70)
+                self.display.heading(column, text=str(column).capitalize())
+            for row in self.data:
+                self.display.insert("", 0, text="", values=row)
+            self.display.grid(row=1, column=4, sticky=Tk.W+Tk.E)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
+
+    def select_cmd(self, selected):
+        print('Selected items: %s' % selected)
 
 ################################################################################
 #################### Select Data ###############################################

@@ -448,3 +448,41 @@ ERROR:root:Databuild instance has no attribute 'help_menu_dialog'
 ERROR:root:Databuild instance has no attribute 'update_row_dialog'
 ERROR:root:Databuild instance has no attribute 'delete_row_dialog'
 ERROR:root:Databuild instance has no attribute 'help_menu_dialog'
+ERROR:root:can't find package treectrl
+ERROR:root:Databuild instance has no attribute 'display'
+ERROR:root:can't find package treectrl
+ERROR:root:Databuild instance has no attribute 'display'
+ERROR:root:can't find package treectrl
+ERROR:root:Databuild instance has no attribute 'display'
+ERROR:root:can't find package treectrl
+ERROR:root:Databuild instance has no attribute 'display'
+ERROR:root:can't find package treectrl
+ERROR:root:can't find package treectrl
+ERROR:root:can't find package treectrl
+ERROR:root:can't find package treectrl
+ERROR:root:can't find package treectrl
+ERROR:root:can't find package treectrl
+ERROR:root:can't find package treectrl
+ERROR:root:can't find package treectrl
+ERROR:root:can't find package treectrl
+ERROR:root:can't find package treectrl
+ERROR:root:couldn't load library "C:/Python27/tcl/treectrl2.4.1/treectrl24.dll": invalid argument
+ERROR:root:couldn't load library "C:/Python27/tcl/treectrl2.4.1/treectrl24.dll": invalid argument
+ERROR:root:unknown option "-width"
+ERROR:root:unknown option "-width"
+ERROR:root:global name 'select_cmd' is not defined
+ERROR:root:global name 'select_cmd' is not defined
+ERROR:root:unknown option "-selectcmd"
+ERROR:root:unknown option "-selectcmd"
+ERROR:root:insert() takes at most 4 arguments (5 given)
+ERROR:root:insert() takes at most 4 arguments (5 given)
+ERROR:root:'tuple' object has no attribute 'capitalize'
+ERROR:root:'tuple' object has no attribute 'capitalize'
+ERROR:root:'tuple' object has no attribute 'description'
+ERROR:root:'tuple' object has no attribute 'description'
+ERROR:root:'tuple' object has no attribute 'capitalize'
+ERROR:root:'tuple' object has no attribute 'capitalize'
+ERROR:root:insert() takes at most 4 arguments (5 given)
+ERROR:root:insert() takes at most 4 arguments (5 given)
+ERROR:root:global name 'top' is not defined
+ERROR:root:global name 'top' is not defined
