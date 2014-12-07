@@ -21,7 +21,7 @@ class Databuild(Tk.Frame):
         # Set the parent Tkinter.Frame
         self.parent = parent
         # Set minimum size
-        self.parent.minsize(width=640, height=480)
+        self.parent.minsize(width=640, height=300)
         # Initialize the class variables
         self.init_data()
         # Initialize the MySQL database connection
@@ -117,15 +117,16 @@ class Databuild(Tk.Frame):
         try:
             # Tables in the Database
             self.table_label = Tk.Label(self.parent, text='Current Table: ')\
-                                        .grid(row=0, column=3, sticky=Tk.W+Tk.E)
-            #TODO change this as data will be initialized
+                                        .grid(row=0, column=0, sticky='ew')
+            #Tables list is populated at runtime by self.populate_table_dropdown
             self.tables_list = None
             # Data Display
             self.display = ttk.Treeview(self.parent)
+            self.display.grid(row=1, column=1, sticky='ews')
             # Scrollbar
             yscroll = Tk.Scrollbar(command=self.display.yview,
                                    orient=Tk.VERTICAL)
-            yscroll.grid(row=1, column=5, sticky='ns')
+            yscroll.grid(row=1, column=2, sticky='ns')
             # Initialize the displays with data
             self.populate_table_dropdown()
             self.populate_display()
@@ -501,11 +502,8 @@ class Databuild(Tk.Frame):
             self.tables_list = Tk.OptionMenu(self.parent, 
                                              var,
                                              *options,
-                                             command=self.select_table)\
-                                                .grid(row=0,
-                                                      column=4,
-                                                      columnspan=2,
-                                                      sticky=Tk.W+Tk.E)
+                                             command=self.select_table)
+            self.tables_list.grid(row=0, column=1,columnspan=1,sticky=Tk.W)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -515,25 +513,22 @@ class Databuild(Tk.Frame):
         Args: None
         Rets: None"""
         try:
-            #self.display.delete(0, Tk.END)
+            map(self.display.delete, self.display.get_children())
             self.data = self.select_rows(self.table)
             list_columns = self.get_column_names(self.table)
+            list_columns = self.flatten_nested_hierarchy(list_columns)
             # Accept tuple of column names
             self.display['columns'] = list_columns
 
             for column in list_columns:
-                self.display.column(column, width=70)
+                self.display.column(column)
                 self.display.heading(column, text=str(column).capitalize())
             for row in self.data:
-                self.display.insert("", 0, text="", values=row)
-            self.display.grid(row=1, column=4, sticky=Tk.W+Tk.E)
+                self.display.insert("", 'end', text="", values=row)
+            self.display['show'] = 'headings'
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
-
-    def select_cmd(self, selected):
-        print('Selected items: %s' % selected)
-
 ################################################################################
 #################### Select Data ###############################################
 ################################################################################
@@ -707,6 +702,17 @@ class Databuild(Tk.Frame):
             sql = 'SELECT column_name FROM information_schema.columns WHERE '\
                   'table_name="%s";' % table
             return self.execute_command(sql)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def get_column_cursor_names(self):
+        try:
+            column_names = []
+            columns = self.cursor.description
+            for column in columns:
+                column_names.append(column[0])
+            return column_names
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -1010,6 +1016,7 @@ class DescribeTableDialog(Tk.Toplevel):
         Tk.Toplevel.__init__(self, parent)
         self.parent = parent
         self.title('Table Properties')
+        self.geometry("640x200")
         self.show_table_properties()
 
     def show_table_properties(self):
@@ -1018,14 +1025,20 @@ class DescribeTableDialog(Tk.Toplevel):
         Rets: None
         """
         try:
-            properties = Tk.Listbox(self, height=10, width=50)
+            properties = ttk.Treeview(self)
             data = self.parent.describe_table(self.parent.table)
-            data = self.parent.flatten_nested_hierarchy(data)
-            properties.delete(0, Tk.END)
-            for i, item in enumerate(data):
-                properties.insert(i+1, data[i])
-                logging.info(data[i])
-            properties.pack()
+            list_columns = self.parent.get_column_cursor_names()[1:]
+            properties['columns'] = list_columns
+            map(properties.delete, properties.get_children())
+            for column in list_columns:
+                properties.column(column,minwidth=10, width = 15)
+                properties.heading(column, text=str(column))
+            for row in data:
+                if row is None:
+                    row = 'None'
+                properties.insert("", 'end', text="", values=row)
+            properties['show'] = 'headings'
+            properties.pack(expand=Tk.YES, fill=Tk.BOTH)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()

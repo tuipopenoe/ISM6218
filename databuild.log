@@ -486,3 +486,39 @@ ERROR:root:insert() takes at most 4 arguments (5 given)
 ERROR:root:insert() takes at most 4 arguments (5 given)
 ERROR:root:global name 'top' is not defined
 ERROR:root:global name 'top' is not defined
+ERROR:root:Item 0 not found
+ERROR:root:Item 0 not found
+ERROR:root:global name 'OptionMenu' is not defined
+ERROR:root:global name 'OptionMenu' is not defined
+ERROR:root:value for "-values" missing
+ERROR:root:value for "-values" missing
+ERROR:root:Invalid column index i
+INFO:root:(('id', 3, 2, 11, 11, 0, 0), ('name', 253, 9, 20, 20, 0, 1), ('value', 253, 11, 30, 30, 0, 1))
+INFO:root:(('id', 3, 2, 11, 11, 0, 0), ('name', 253, 9, 20, 20, 0, 1), ('value', 253, 11, 30, 30, 0, 1))
+INFO:root:(('id', 3, 1, 11, 11, 0, 0), ('name', 253, 6, 20, 20, 0, 1), ('value', 253, 7, 20, 20, 0, 1))
+INFO:root:(('id', 3, 2, 11, 11, 0, 0), ('name', 253, 9, 20, 20, 0, 1), ('value', 253, 11, 30, 30, 0, 1))
+INFO:root:(('id', 3, 2, 11, 11, 0, 0), ('name', 253, 9, 20, 20, 0, 1), ('value', 253, 11, 30, 30, 0, 1))
+INFO:root:(('id', 3, 1, 11, 11, 0, 0), ('name', 253, 6, 20, 20, 0, 1), ('value', 253, 7, 20, 20, 0, 1))
+ERROR:root:not all arguments converted during string formatting
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:not all arguments converted during string formatting
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:not all arguments converted during string formatting
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:not all arguments converted during string formatting
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:not all arguments converted during string formatting
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:not all arguments converted during string formatting
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:not all arguments converted during string formatting
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:'NoneType' object is not iterable
+ERROR:root:global name 'properties' is not defined
+ERROR:root:global name 'data' is not defined
