@@ -121,7 +121,7 @@ class Databuild(Tk.Frame):
             #Tables list is populated at runtime by self.populate_table_dropdown
             self.tables_list = None
             # Data Display
-            self.display = ttk.Treeview(self.parent)
+            self.display = ttk.Treeview(self.parent, selectmode='browse')
             self.display.grid(row=1, column=1, sticky='ews')
             # Scrollbar
             yscroll = Tk.Scrollbar(command=self.display.yview,
@@ -532,6 +532,12 @@ class Databuild(Tk.Frame):
 ################################################################################
 #################### Select Data ###############################################
 ################################################################################
+
+    def TableItemClick(self):
+        try:
+            selected_item = self.display.tree.selection()
+            if selected_item:
+                print(selected_item)
 
     def select_table(self, table):
         """Set the current table to table.
@@ -1050,6 +1056,7 @@ class ColumnRelationshipDialog(Tk.Toplevel):
         Tk.Toplevel.__init__(self, parent)
         self.parent = parent
         self.title('Column Relationships')
+        self.geometry("760x720")
         self.show_column_relationships()
 
     def show_column_relationships(self):
@@ -1058,15 +1065,20 @@ class ColumnRelationshipDialog(Tk.Toplevel):
         Rets: None
         """
         try:
-            relationships = Tk.Listbox(self, height=10, width=50)
+            properties = ttk.Treeview(self)
             data = self.parent.show_column_relationships(self.parent.table)
-            data = self.parent.flatten_nested_hierarchy(data)
-            logging.info(data)
-            relationships.delete(0, Tk.END)
-            for i, item in enumerate(data):
-                relationships.insert(i+1, data[i])
-                logging.info(data[i])
-            relationships.pack()
+            list_columns = self.parent.get_column_cursor_names()[1:]
+            properties['columns'] = list_columns
+            map(properties.delete, properties.get_children())
+            for column in list_columns:
+                properties.column(column,minwidth=25)
+                properties.heading(column, text=str(column))
+            for row in data:
+                if row is None:
+                    row = 'None'
+                properties.insert("", 'end', text="", values=row)
+            properties['show'] = 'headings'
+            properties.pack(expand=Tk.YES, fill=Tk.BOTH)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -1108,14 +1120,22 @@ class ConnectionInfoDialog(Tk.Toplevel):
     def view_connection_info(self):
         """Display the connection info."""
         try:
-            lbl_host = Tk.Label(self, text='Host: ').pack()
-            lbl_host2 = Tk.Label(self, text=self.parent.host).pack()
-            lbl_user = Tk.Label(self, text='User: ').pack()
-            lbl_user2 = Tk.Label(self, text=self.parent.user).pack()
-            lbl_pass = Tk.Label(self, text='Password: ').pack()
-            lbl_pass2 = Tk.Label(self, text=self.parent.password).pack()
-            lbl_data = Tk.Label(self, text='Database: ').pack()
-            lbl_data2 = Tk.Label(self, text=self.parent.database).pack()
+            lbl_host = Tk.Label(self, text='Host: ')\
+                .grid(row=0, column=0)
+            lbl_host2 = Tk.Label(self, text=self.parent.host)\
+                .grid(row=0, column=1)
+            lbl_user = Tk.Label(self, text='User: ')\
+                .grid(row=1, column=0)
+            lbl_user2 = Tk.Label(self, text=self.parent.user)\
+                .grid(row=1, column=1)
+            lbl_pass = Tk.Label(self, text='Password: ')\
+                .grid(row=2, column=0)
+            lbl_pass2 = Tk.Label(self, text=self.parent.password)\
+                .grid(row=2, column=1)
+            lbl_data = Tk.Label(self, text='Database: ')\
+                .grid(row=3, column=0)
+            lbl_data2 = Tk.Label(self, text=self.parent.database)\
+                .grid(row=3, column=1)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
