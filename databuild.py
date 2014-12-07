@@ -92,6 +92,7 @@ class Databuild(Tk.Frame):
             self.current_table = None
             self.current_row = None
             self.current_column = None
+            self.current_columns = None
             self.table = 'databuild'
         except Exception, ex:
             logging.error(ex)
@@ -122,6 +123,8 @@ class Databuild(Tk.Frame):
             self.tables_list = None
             # Data Display
             self.display = ttk.Treeview(self.parent, selectmode='browse')
+            # Bind the click event so that selected data can be used
+            self.display.bind("<<TreeviewSelect>>", self.get_current_row)
             self.display.grid(row=1, column=1, sticky='ews')
             # Scrollbar
             yscroll = Tk.Scrollbar(command=self.display.yview,
@@ -187,6 +190,7 @@ class Databuild(Tk.Frame):
         """
         try:
             # Open a new connection
+            logging.info( 'Open new %s' %str((host, user, password, database)))
             self.open_connection(host, user, password, database)
             # Populate the tables from the new database.
             self.populate_table_dropdown()
@@ -224,6 +228,8 @@ class Databuild(Tk.Frame):
             self.init_ui_view_menu()
             # Delete Menu
             self.init_ui_delete_menu()
+            # Generate Menu
+            self.init_ui_generate_menu()
             # Help Menu
             self.init_ui_help_menu()
             # Set menu bar for root frame 
@@ -299,6 +305,9 @@ class Databuild(Tk.Frame):
             self.insert_menu.add_separator()
             self.insert_menu.add_command(label='Insert Column',
                                          command=self.insert_column_dialog)
+            self.insert_menu.add_separator()
+            self.insert_menu.add_command(label='Insert Table',
+                                         command=self.insert_table_dialog)
             self.menu_bar.add_cascade(label='Insert',
                                       menu=self.insert_menu)
         except Exception, ex:
@@ -356,6 +365,17 @@ class Databuild(Tk.Frame):
             logging.error(ex)
             traceback.print_exc()
 
+    def init_ui_generate_menu(self):
+        try:
+            self.gen_menu = Tk.Menu(self.menu_bar, tearoff=0)
+            self.gen_menu.add_command(label='Import from File')
+            self.gen_menu.add_separator()
+            self.gen_menu.add_command(label='Export to File')
+            self.menu_bar.add_cascade(label='Generate', menu=self.gen_menu)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
     def init_ui_help_menu(self):
         """Initialize the help menu.
         Args: None
@@ -378,28 +398,12 @@ class Databuild(Tk.Frame):
 ################################################################################
 
     def open_connection_dialog(self):
-        t = Tk.Toplevel(self)
-        l_host = Tk.Label(t, text='Host: ').grid(row=0, column=0)
-        e_host = Tk.Entry(t, justify=Tk.RIGHT).grid(row=0, column=1)
-        l_user = Tk.Label(t, text='User: ').grid(row=1, column=0)
-        e_user = Tk.Entry(t, justify=Tk.RIGHT).grid(row=1, column=1)
-        l_pass = Tk.Label(t, text='Password: ').grid(row=2, column=0)
-        e_pass = Tk.Entry(t, justify=Tk.RIGHT).grid(row=2, column=1)
-        l_data = Tk.Label(t, text='Database: ').grid(row=3, column=0)
-        e_data = Tk.Entry(t, justify=Tk.RIGHT).grid(row=3, column=1)
-
-        def _open_connection():
-            try:
-                self.open_new_connection(e_host.get(),
-                                         e_user.get(), 
-                                         e_pass.get(),
-                                         e_data.get())
-            except:
-                self.open_new_connection()
-            t.destroy()
-
-        b_conn = Tk.Button(t, text='Connect', command=_open_connection)\
-                          .grid(row=4, column=0, columnspan=2)
+        """Create a dialog to open a connection to a database."""
+        try:
+            connection_open_dialog = OpenConnectionDialog(self)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
 
     def view_connection_info_dialog(self):
         try:
@@ -422,6 +426,13 @@ class Databuild(Tk.Frame):
     def insert_column_dialog(self):
         try:
             insert_column_dialog = InsertColumnDialog(self)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def insert_table_dialog(self):
+        try:
+            insert_table_dialog = InsertTableDialog(self)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -533,11 +544,25 @@ class Databuild(Tk.Frame):
 #################### Select Data ###############################################
 ################################################################################
 
-    def TableItemClick(self):
+    def get_current_row(self, instance):
         try:
-            selected_item = self.display.tree.selection()
+            selected_item = self.display.selection()
             if selected_item:
-                print(selected_item)
+                self.current_columns = self.display['columns']
+                self.current_row = self.display.item(selected_item)['values']
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def delete_current_row(self):
+        try:
+            where = ''
+            for i, column in enumerate(self.current_columns):
+                where += '%s = "%s" ' % (column, self.current_row[i])
+            self.delete_row(self.table, where)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc(ex)
 
     def select_table(self, table):
         """Set the current table to table.
@@ -547,7 +572,8 @@ class Databuild(Tk.Frame):
         try:
             self.table = table[0]
             self.populate_display()
-        except:
+        except Exception, ex:
+            logging.error(ex)
             traceback.print_exc()
 
 
@@ -626,7 +652,7 @@ class Databuild(Tk.Frame):
             logging.error(ex)
             traceback.print_exc()
 
-    def create_table(self, table):
+    def insert_table(self, table):
         """Create a new table in the database.
         Args: table-> name of the table to be created
         Rets: Output from the MySQL query
@@ -735,14 +761,14 @@ class Databuild(Tk.Frame):
             logging.error(ex)
             traceback.print_exc()
 
-    def delete_row(self, table, column_name, value):
+    def delete_row(self, table, ):
         """Delete a row from the table.
         Args: table-> Table to delete a row from
               column_name-> Column to compare where clause against
               value-> value to match against the column
         Rets: Output of the SQL query"""
         try:
-            sql = 'DELETE FROM %S WHERE %s=%s;' % (table, column_name, value)
+            sql = 'DELETE FROM %S WHERE %s;' % (table, where)
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
@@ -790,6 +816,56 @@ class Databuild(Tk.Frame):
 ################################################################################
 #################### Dialog Classes ############################################
 ################################################################################
+
+class OpenConnectionDialog(Tk.Toplevel):
+    """Dialog to open a connection to a MySQL database"""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self)
+        self.parent = parent
+        self.title("Open Connection")
+        self.open_connection()
+
+    def open_connection(self):
+        try:
+            self.l_host = Tk.Label(self, text='Host: ').grid(row=0, column=0)
+            self.e_host= Tk.Entry(self, justify=Tk.RIGHT)
+            self.e_host.grid(row=0, column=1)
+            self.l_user= Tk.Label(self, text='User: ').grid(row=1, column=0)
+            self.e_user= Tk.Entry(self, justify=Tk.RIGHT)
+            self.e_user.grid(row=1, column=1)
+            self.l_pass= Tk.Label(self, text='Password: ').grid(row=2, column=0)
+            self.e_pass= Tk.Entry(self, justify=Tk.RIGHT)
+            self.e_pass.grid(row=2, column=1)
+            self.l_data= Tk.Label(self, text='Database: ').grid(row=3, column=0)
+            self.e_data= Tk.Entry(self, justify=Tk.RIGHT)
+            self.e_data.grid(row=3, column=1)
+
+            def _open_connection():
+                try:
+                    c_host = self.e_host.get()
+                    c_user = self.e_user.get()
+                    c_pass = self.e_pass.get()
+                    c_data = self.e_data.get()
+
+                    self.parent.open_new_connection(host=c_host,
+                                                    user=c_user, 
+                                                    password=c_pass,
+                                                    database=c_data)
+                    tables = self.parent.show_tables()
+                    self.parent.select_table(tables[0])
+                    self.parent.populate_table_dropdown()
+                    self.parent.populate_display()
+                    self.destroy()
+                except Exception, ex:
+                    logging.error(ex)
+                    traceback.print_exc()
+
+            b_conn = Tk.Button(self, text='Connect', command=_open_connection)\
+                              .grid(row=4, column=0, columnspan=2)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
 
 class InsertRowDialog(Tk.Toplevel):
     """Dialog frame to insert rows into a table."""
@@ -872,6 +948,36 @@ class InsertColumnDialog(Tk.Toplevel):
                               text='Insert Column',
                               command=_insert_column)\
                               .grid(row=2, column=1, sticky=Tk.W+Tk.E)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+class InsertTableDialog(Tk.Toplevel):
+    """Dialog to insert a table into the database."""
+    def __init__(self, parent):
+        """Constructor"""
+        Tk.Toplevel.__init__(self)
+        self.parent = parent
+        self.title("Insert Table")
+        self.insert_table()
+
+    def insert_table(self):
+        """Insert a table into the database.
+        Args: None
+        Rets: None
+        """
+        try:
+            lbl_name = Tk.Label(self, text='Enter a table name: ').pack()
+            ent_name = Tk.Entry(self).pack()
+
+            def _insert_tab():
+                t_name = ent_name.get()
+                self.parent.insert_table(t_name)
+                self.destroy()
+                self.parent.populate_table_dropdown()
+
+            btn_name = Tk.Button(self, text='Insert Table', command=_insert_tab)
+            btn_name.pack()
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -977,13 +1083,13 @@ class DeleteRowDialog(Tk.Toplevel):
         """
         try:
             lbl_confirm = Tk.Label(self, text='Confirm Delete Row?').pack()
-            btn_cancel = Tk.Label(self, text='Cancel',
-                                  command=self.destroy).pack
-            btn_confirm = Tk.Button(self, text='Delete Row',
-                                    command=_delete_row)
-
+            btn_cancel = Tk.Button(self, text='Cancel',
+                                   command=self.destroy).pack()
             def _delete_row():
-                self.parent.delete_row(self.parent.current_row)
+                self.parent.delete_current_row()
+
+            btn_confirm = Tk.Button(self, text='Delete Row',
+                        command=_delete_row).pack()
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -1004,13 +1110,13 @@ class DeleteColumnDialog(Tk.Toplevel):
         """
         try:
             lbl_confirm = Tk.Label(self, text='Confirm Delete Column?').pack()
-            btn_cancel = Tk.Label(self, text='Cancel',
-                                  command=self.destroy).pack
-            btn_confirm = Tk.Button(self, text='Delete Column',
-                                    command=_delete_column)
-
+            btn_cancel = Tk.Button(self, text='Cancel',
+                                  command=self.destroy).pack()
             def _delete_column():
                 self.parent.delete_column(self.parent.current_column)
+
+            btn_confirm = Tk.Button(self, text='Delete Column',
+                        command=_delete_column).pack()
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -1100,7 +1206,7 @@ class ViewLogDialog(Tk.Toplevel):
         try:
             with open('databuild.log', 'r') as f:
                 data = f.readlines()
-                log = Tk.Listbox(self, height=20, width=50)
+                log = Tk.Listbox(self, height=30, width=100)
                 for i, item in enumerate(data):
                     log.insert(i+1, data[i])
                 log.pack()
