@@ -1,6 +1,7 @@
 #!python2
 # Tui Popenoe
 
+import csv
 import paramiko
 import urllib2
 import json
@@ -21,7 +22,7 @@ class Databuild(Tk.Frame):
         # Set the parent Tkinter.Frame
         self.parent = parent
         # Set minimum size
-        self.parent.minsize(width=640, height=300)
+        self.parent.minsize(width=720, height=300)
         # Initialize the class variables
         self.init_data()
         # Initialize the MySQL database connection
@@ -53,6 +54,29 @@ class Databuild(Tk.Frame):
             logging.error(ex)
             traceback.print_exc()
             return None
+
+    def export_file(self, filename='databuild.csv'):
+        try:
+            self.data = self.select_rows(self.table)
+            csv_writer = csv.writer(open("databuild.csv", "wb"))
+            for row in data:
+                csv_writer.writerow(row)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def import_file(self, filename='databuild.csv', table='temp_table'):
+        try:
+            sql_load_data = 'LOAD DATA LOCAL INFILE "csv?_%s.csv INTO TABLE %s'\
+                % (filename, table)
+            sql_load_data +=' FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"'
+            sql_load_data += ' IGNORE 1 LINES \n'
+            sql_load_data += ''' ENCLOSED BY '"' ESCAPED BY "\\" '''
+            self.execute_command(sql_load_data)
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
 
 ################################################################################
 #################### Init ######################################################
@@ -131,6 +155,9 @@ class Databuild(Tk.Frame):
             yscroll = Tk.Scrollbar(command=self.display.yview,
                                    orient=Tk.VERTICAL)
             yscroll.grid(row=1, column=2, sticky='ns')
+            xscroll = Tk.Scrollbar(command=self.display.xview,
+                                   orient=Tk.HORIZONTAL)
+            xscroll.grid(row=2,column=1, sticky='ew')
             # Initialize the displays with data
             self.populate_table_dropdown()
             self.populate_display()
@@ -369,9 +396,11 @@ class Databuild(Tk.Frame):
     def init_ui_generate_menu(self):
         try:
             self.gen_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.gen_menu.add_command(label='Import from File')
+            self.gen_menu.add_command(label='Import from File',
+                                      command=self.import_file)
             self.gen_menu.add_separator()
-            self.gen_menu.add_command(label='Export to File')
+            self.gen_menu.add_command(label='Export to File',
+                                      command=self.export_file)
             self.menu_bar.add_cascade(label='Generate', menu=self.gen_menu)
         except Exception, ex:
             logging.error(ex)
@@ -659,7 +688,8 @@ class Databuild(Tk.Frame):
         Rets: Output from the MySQL query
         """
         try:
-            sql = 'CREATE TABLE IF NOT EXISTS %s;' % table
+            init_id = '(id INT NOT NULL PRIMARY KEY AUTO_INCREMENT)'
+            sql = 'CREATE TABLE IF NOT EXISTS %s %s;' % (table, init_id)
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
@@ -762,14 +792,14 @@ class Databuild(Tk.Frame):
             logging.error(ex)
             traceback.print_exc()
 
-    def delete_row(self, table, ):
+    def delete_row(self, table, where):
         """Delete a row from the table.
         Args: table-> Table to delete a row from
               column_name-> Column to compare where clause against
               value-> value to match against the column
         Rets: Output of the SQL query"""
         try:
-            sql = 'DELETE FROM %S WHERE %s;' % (table, where)
+            sql = 'DELETE FROM %s WHERE %s;' % (table, where)
             return self.execute_command(sql)
         except Exception, ex:
             logging.error(ex)
@@ -969,7 +999,8 @@ class InsertTableDialog(Tk.Toplevel):
         """
         try:
             lbl_name = Tk.Label(self, text='Enter a table name: ').pack()
-            ent_name = Tk.Entry(self).pack()
+            ent_name = Tk.Entry(self)
+            ent_name.pack()
 
             def _insert_tab():
                 t_name = ent_name.get()
@@ -1023,8 +1054,8 @@ class UpdateRowDialog(Tk.Toplevel):
 
             b_ins = Tk.Button(self,
                               text='Update Row',
-                              command=_update_row)\
-                             .grid(row=i+1, column=1, sticky=Tk.W+Tk.E)
+                              command=_update_row)
+            b_ins.grid(row=i+1, column=1, sticky=Tk.W+Tk.E)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -1088,7 +1119,8 @@ class DeleteRowDialog(Tk.Toplevel):
                                    command=self.destroy).pack()
             def _delete_row():
                 self.parent.delete_current_row()
-
+                self.destroy()
+                self.parent.populate_display()
             btn_confirm = Tk.Button(self, text='Delete Row',
                         command=_delete_row).pack()
         except Exception, ex:
@@ -1118,6 +1150,7 @@ class DeleteColumnDialog(Tk.Toplevel):
                 try:
                     self.parent.delete_column(self.parent.table,
                                               e_column.get())
+                    self.parent.populate_display()
                 except Exception, ex:
                     logging.error(ex)
                     traceback.print_exc()
