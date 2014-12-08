@@ -124,7 +124,8 @@ class Databuild(Tk.Frame):
             # Data Display
             self.display = ttk.Treeview(self.parent, selectmode='browse')
             # Bind the click event so that selected data can be used
-            self.display.bind("<<TreeviewSelect>>", self.get_current_row)
+            self.display.bind("<<TreeviewSelect>>",
+                              self.get_current_row)
             self.display.grid(row=1, column=1, sticky='ews')
             # Scrollbar
             yscroll = Tk.Scrollbar(command=self.display.yview,
@@ -1109,12 +1110,17 @@ class DeleteColumnDialog(Tk.Toplevel):
         Rets: None
         """
         try:
-            lbl_confirm = Tk.Label(self, text='Confirm Delete Column?').pack()
-            btn_cancel = Tk.Button(self, text='Cancel',
-                                  command=self.destroy).pack()
+            lbl_confirm = Tk.Label(self,
+                                   text='Enter the column to delete: ').pack()
+            e_column = Tk.Entry(self)
+            e_column.pack()
             def _delete_column():
-                self.parent.delete_column(self.parent.current_column)
-
+                try:
+                    self.parent.delete_column(self.parent.table,
+                                              e_column.get())
+                except Exception, ex:
+                    logging.error(ex)
+                    traceback.print_exc()
             btn_confirm = Tk.Button(self, text='Delete Column',
                         command=_delete_column).pack()
         except Exception, ex:
@@ -1204,6 +1210,13 @@ class ViewLogDialog(Tk.Toplevel):
         Rets: None
         """
         try:
+            def _clear_log():
+                with open('databuild.log', 'w') as f:
+                    f.seek(0)
+                    f.write('')
+                self.view_log_dialog()
+            clear_log = Tk.Button(self, text='Clear Log', command=_clear_log)
+            clear_log.pack()
             with open('databuild.log', 'r') as f:
                 data = f.readlines()
                 log = Tk.Listbox(self, height=30, width=100)
