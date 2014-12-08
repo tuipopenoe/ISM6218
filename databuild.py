@@ -1,10 +1,9 @@
 #!python2
 # Tui Popenoe
+# databuild.py - Databuild Workbench application
 
 import csv
-import paramiko
 import urllib2
-import json
 import Tkinter as Tk
 import ttk
 import tkMessageBox
@@ -56,6 +55,10 @@ class Databuild(Tk.Frame):
             return None
 
     def export_file(self, filename='databuild.csv'):
+        """Export a database table to a csv flat file.
+        Args: filename->filename to write to.
+        Rets: None
+        """
         try:
             self.data = self.select_rows(self.table)
             csv_writer = csv.writer(open("databuild.csv", "wb"))
@@ -66,6 +69,11 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def import_file(self, filename='databuild.csv', table='temp_table'):
+        """Import a file from CSV and create a table with the data.
+        Args: filename->filename to read from
+              table-> name of the table to create.
+        Rets: None
+        """
         try:
             sql_load_data = 'LOAD DATA LOCAL INFILE "csv?_%s.csv INTO TABLE %s'\
                 % (filename, table)
@@ -135,7 +143,7 @@ class Databuild(Tk.Frame):
         self.init_display()
 
     def init_display(self):
-        """Load the UI dropdown list that displays the database tables.
+        """Load the main UI elements.
         Args: None
         Rets: None
         """
@@ -394,6 +402,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def init_ui_generate_menu(self):
+        """Initialize the generate menu for importing and exporting files.
+        Args: None
+        Rets: None
+        """
         try:
             self.gen_menu = Tk.Menu(self.menu_bar, tearoff=0)
             self.gen_menu.add_command(label='Import from File',
@@ -428,7 +440,10 @@ class Databuild(Tk.Frame):
 ################################################################################
 
     def open_connection_dialog(self):
-        """Create a dialog to open a connection to a database."""
+        """Create a dialog to open a connection to a database.
+        Args: None
+        Rets: None
+        """
         try:
             connection_open_dialog = OpenConnectionDialog(self)
         except Exception, ex:
@@ -436,6 +451,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def view_connection_info_dialog(self):
+        """Create a dialog to display the connection info.
+        Args: None
+        Rets: None
+        """
         try:
             connection_info_dialog = ConnectionInfoDialog(self)
         except Exception, ex:
@@ -443,7 +462,7 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def insert_row_dialog(self):
-        """Create a dialog to insert rows into a table.
+        """Create a dialog to insert rows into the current table.
         Args: None
         Rets: None
         """
@@ -454,6 +473,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def insert_column_dialog(self):
+        """Create a dialog to insert a column into the current table.
+        Args: None
+        Rets: None
+        """
         try:
             insert_column_dialog = InsertColumnDialog(self)
         except Exception, ex:
@@ -461,6 +484,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def insert_table_dialog(self):
+        """Create a dialog to insert a table into the database.
+        Args: None
+        Rets: None
+        """
         try:
             insert_table_dialog = InsertTableDialog(self)
         except Exception, ex:
@@ -468,6 +495,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def update_row_dialog(self):
+        """Create a dialog to update a row in the current table.
+        Args: None
+        Rets: None
+        """
         try:
             update_row_dialog = UpdateRowDialog(self)
         except Exception, ex:
@@ -475,6 +506,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def update_column_dialog(self):
+        """Create a dialog to update a column in the current table.
+        Args: None
+        Rets: None
+        """
         try:
             update_column_dialog = UpdateColumnDialog(self)
         except Exception, ex:
@@ -482,6 +517,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def delete_row_dialog(self):
+        """Create a dialog to delete a row in the current table.
+        Args: None
+        Rets: None
+        """
         try:
             delete_row_dialog = DeleteRowDialog(self)
         except Exception, ex:
@@ -489,6 +528,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def delete_column_dialog(self):
+        """Create a dialog to delete a column in the current table.
+        Args: None
+        Rets: None
+        """
         try:
             delete_column_dialog = DeleteColumnDialog(self)
         except Exception, ex:
@@ -496,6 +539,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def help_menu_dialog(self):
+        """Create a dialog to show a help menu with application documentation
+        Args: None
+        Rets: None
+        """
         try:
             help_menu_dialog = HelpMenuDialog(self)
         except Exception, ex:
@@ -503,6 +550,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def app_info_dialog(self):
+        """Create a dialog to show application info.
+        Args: None
+        Rets: None
+        """
         try:
             app_info_dialog = AppInfoDialog(self)
         except Exception, ex:
@@ -536,6 +587,10 @@ class Databuild(Tk.Frame):
 ################################################################################
 
     def populate_table_dropdown(self):
+        """Fill the dropdown selection with tables from the current database
+        Args: None
+        Rets: None
+        """
         try:
             options = self.show_tables()
             var = Tk.StringVar()
@@ -550,7 +605,7 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def populate_display(self):
-        """Populate the display listbox with the column names and row data
+        """Populate the display Treeview with the column names and row data
         Args: None
         Rets: None"""
         try:
@@ -575,6 +630,10 @@ class Databuild(Tk.Frame):
 ################################################################################
 
     def get_current_row(self, instance):
+        """Get the currently selected row in the display Treeview
+        Args: instance -> The treeview instance
+        Rets: None
+        """
         try:
             selected_item = self.display.selection()
             if selected_item:
@@ -585,6 +644,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def delete_current_row(self):
+        """Delete the currently selected row from the table.
+        Args: None
+        Rets: None
+        """
         try:
             where = ''
             for i, column in enumerate(self.current_columns):
@@ -663,7 +726,8 @@ class Databuild(Tk.Frame):
     def drop_database(self, database):
         """Delete a database from the MySQL instance
         Args: database-> The database to delete
-        Rets: The outputs of the SQL query"""
+        Rets: The outputs of the SQL query
+        """
         try:
             sql = 'DROP ' + database + ';'
             return self.execute_command(sql)
@@ -674,7 +738,8 @@ class Databuild(Tk.Frame):
     def show_tables(self):
         """Show available tables in the MySQL database
         Args: None
-        Rets: Output from the MySQL query"""
+        Rets: Output from the MySQL query
+        """
         try:
             sql = 'SHOW tables;'
             return self.execute_command(sql)
@@ -696,7 +761,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def describe_table(self, table):
-        """Display table organization."""
+        """Display the table columns and their types.
+        Args: table-> table to display
+        Rets: Output of the SQL query
+        """
         try:
             sql = 'DESCRIBE %s;' % table
             return self.execute_command(sql)
@@ -731,7 +799,8 @@ class Databuild(Tk.Frame):
         """Select * rows from table, with where clause.
         Args: table-> Name of the table to select from
               where-> Where clause for the SQL query
-        Rets: Output of the SQL query"""
+        Rets: Output of the SQL query
+        """
         try:
             # Initialize the select statement
             sql = 'SELECT * FROM %s;' % table
@@ -748,7 +817,8 @@ class Databuild(Tk.Frame):
     def insert_row(self, table, values):
         """Insert records into a table.
         Args: table-> Name of the table to insert a row into
-        Rets: Output of the SQL query"""
+        Rets: Output of the SQL query
+        """
         try:
             sql = 'INSERT INTO %s VALUES (%s);' % (table, values)
             logging.info(sql)
@@ -760,7 +830,8 @@ class Databuild(Tk.Frame):
     def get_column_names(self, table):
         """Get the column names for the specified table.
         Args: table-> Table to get the column names from
-        Rets: Output of the SQL query"""
+        Rets: Output of the SQL query
+        """
         try:
             sql = 'SELECT column_name FROM information_schema.columns WHERE '\
                   'table_name="%s";' % table
@@ -770,6 +841,10 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def get_column_cursor_names(self):
+        """Get the column names using the cursor in the MySQLdb connector
+        Args: None
+        Rets: None
+        """
         try:
             column_names = []
             columns = self.cursor.description
@@ -784,7 +859,8 @@ class Databuild(Tk.Frame):
         """Update records in a table.
         Args: table-> Table to update values in
               values-> Values to update in the table
-        Rets: Output of the SQL query"""
+        Rets: Output of the SQL query
+        """
         try:
             sql = 'UPDATE %s %s;' % (table, values)
             return self.execute_command(sql)
@@ -797,7 +873,8 @@ class Databuild(Tk.Frame):
         Args: table-> Table to delete a row from
               column_name-> Column to compare where clause against
               value-> value to match against the column
-        Rets: Output of the SQL query"""
+        Rets: Output of the SQL query
+        """
         try:
             sql = 'DELETE FROM %s WHERE %s;' % (table, where)
             return self.execute_command(sql)
@@ -810,7 +887,8 @@ class Databuild(Tk.Frame):
         Args: table->Table name to add a column to
               column_name->Name of the column to be added
               column_type->Type of the column to be added
-        Rets: Output of the SQL query"""
+        Rets: Output of the SQL query
+        """
         try:
             sql ='ALTER TABLE %s ADD %s %s;' % (table, column_name, column_type)
             return self.execute_command(sql)
@@ -819,24 +897,23 @@ class Databuild(Tk.Frame):
             traceback.print_exc()
 
     def delete_column(self, table, column_name):
-        """Delete a column from a table."""
+        """Delete a column from a table
+        Args: table-> Table to delete the column from
+              column_name-> Name of the column to delete
+        Rets: Output of the SQL statement
+        """
         try:
             sql = 'ALTER TABLE %s DROP %s;' % (table, column_name)
-            self.execute_command(sql)
+            return self.execute_command(sql)
         except:
             #TODO
             traceback.print_exc()
 
-    def generate_output(self, data, filename='output', filetype='.csv'):
-        """Write a table to a file."""
-        try:
-            with open(filename + filetype, 'w') as f:
-                f.write(data)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
     def view_log_dialog(self):
+        """Create a dialog box to display the application log file
+        Args: None
+        Rets: None
+        """
         try:
             view_log_dialog = ViewLogDialog(self)
         except Exception, ex:
@@ -866,7 +943,7 @@ class OpenConnectionDialog(Tk.Toplevel):
             self.e_user= Tk.Entry(self, justify=Tk.RIGHT)
             self.e_user.grid(row=1, column=1)
             self.l_pass= Tk.Label(self, text='Password: ').grid(row=2, column=0)
-            self.e_pass= Tk.Entry(self, justify=Tk.RIGHT)
+            self.e_pass= Tk.Entry(self, justify=Tk.RIGHT, show='*')
             self.e_pass.grid(row=2, column=1)
             self.l_data= Tk.Label(self, text='Database: ').grid(row=3, column=0)
             self.e_data= Tk.Entry(self, justify=Tk.RIGHT)
@@ -1304,7 +1381,18 @@ class HelpMenuDialog(Tk.Toplevel):
     def view_help_info(self):
         """Display the connection info."""
         try:
-            lbl_host = Tk.Label(self, text='Help: ').pack()
+            with open('README.md', 'r') as f:
+                data = f.readlines()
+                log = Tk.Listbox(self, height=30, width=100)
+                for i, item in enumerate(data):
+                    log.insert(i+1, data[i])
+                log.grid(row =0, column=0, sticky='ew')
+                yscroll = Tk.Scrollbar(command=log.yview,
+                                       orient=Tk.VERTICAL)
+                yscroll.grid(row=0, column=1, sticky='ns')
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -1332,6 +1420,7 @@ class AppInfoDialog(Tk.Toplevel):
 ################################################################################
 
 def main():
+    """Main method called at runtime."""
     root = Tk.Tk()
     databuild = Databuild(root)
     root.mainloop()
