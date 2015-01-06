@@ -35,21 +35,21 @@ class Databuild(Tk.Frame):
 #################### Execute Command ###########################################
 ################################################################################
 
-    def execute_command(self, sql):
+    def execute_command(self, sql, db, cursor):
         """Execute a MySQL command upon the database.
         Args: sql -> The SQL statement to be executed.
         Rets: Returns all rows of the query as a list of tuples.
         """
         try:
             # Execute the sql command
-            self.cursor.execute(sql)
+            cursor.execute(sql)
             # Commit any changes to the db
-            self.db.commit()
+            db.commit()
             # return query output as a list of tuples
-            return self.cursor.fetchall()
+            return cursor.fetchall()
         except Exception, ex:
             # If there is an error, rollback the changes
-            self.db.rollback()
+            db.rollback()
             logging.error(ex)
             traceback.print_exc()
             return None
@@ -61,9 +61,10 @@ class Databuild(Tk.Frame):
         """
         try:
             self.data = self.select_rows(self.table)
-            csv_writer = csv.writer(open("databuild.csv", "wb"))
+            csv_writer = csv.writer(open(filename, "wb"))
             for row in data:
                 csv_writer.writerow(row)
+            tkMessageBox.showinfo('Database written to %s' % filename)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -113,13 +114,6 @@ class Databuild(Tk.Frame):
             # MySQL database variables
             self.db = None
             self.cursor = None
-            # Connection Variables
-            self.host = None
-            self.user = None
-            self.password = None
-            self.database = None
-            # Store data from queries
-            self.data = None
             # Currently Selected Row, Column, Table
             self.current_table = None
             self.current_row = None
@@ -188,29 +182,31 @@ class Databuild(Tk.Frame):
         Rets: None
         """
         try:
-            # Set class variables for future use
-            self.host = host
-            self.user = user
-            self.password = password
-            self.database = database
-            # Sets the database object to the connected database
-            self.db = MySQLdb.connect(self.host, self.user, self.password,
-                                      self.database)
-            # Sets the cursor for later access
-            self.cursor = self.db.cursor()
+            # Conncet to a MySQL database and return the connection
+            db = MySQLdb.connect(host,user, password, database)
+            tkMessageBox.showinfo('','Connection opened on %s.' % host)
+            return db
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
 
-    def close_connection(self):
+    def get_cursor(self, db):
+        try:
+            cursor = db.cursor()
+            return cursor
+        except Exception, ex:
+            logging.error(ex)
+            traceback.print_exc()
+
+    def close_connection(self, db):
         """Disconnect from the MySQL database.
         Args: None
         Rets: None
         """
         try:
-            # Disconnect from the MySQL datab
-            self.db.close()
-            tkMessageBox.showinfo("", "Connection closed")
+            # Disconnect from the MySQL database
+            db.close()
+            tkMessageBox.showinfo('', 'Connection closed')
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -919,501 +915,6 @@ class Databuild(Tk.Frame):
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
-
-
-################################################################################
-#################### Dialog Classes ############################################
-################################################################################
-
-class OpenConnectionDialog(Tk.Toplevel):
-    """Dialog to open a connection to a MySQL database"""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self)
-        self.parent = parent
-        self.title("Open Connection")
-        self.open_connection()
-
-    def open_connection(self):
-        try:
-            self.l_host = Tk.Label(self, text='Host: ').grid(row=0, column=0)
-            self.e_host= Tk.Entry(self, justify=Tk.RIGHT)
-            self.e_host.grid(row=0, column=1)
-            self.l_user= Tk.Label(self, text='User: ').grid(row=1, column=0)
-            self.e_user= Tk.Entry(self, justify=Tk.RIGHT)
-            self.e_user.grid(row=1, column=1)
-            self.l_pass= Tk.Label(self, text='Password: ').grid(row=2, column=0)
-            self.e_pass= Tk.Entry(self, justify=Tk.RIGHT, show='*')
-            self.e_pass.grid(row=2, column=1)
-            self.l_data= Tk.Label(self, text='Database: ').grid(row=3, column=0)
-            self.e_data= Tk.Entry(self, justify=Tk.RIGHT)
-            self.e_data.grid(row=3, column=1)
-
-            def _open_connection():
-                try:
-                    c_host = self.e_host.get()
-                    c_user = self.e_user.get()
-                    c_pass = self.e_pass.get()
-                    c_data = self.e_data.get()
-
-                    self.parent.open_new_connection(host=c_host,
-                                                    user=c_user, 
-                                                    password=c_pass,
-                                                    database=c_data)
-                    tables = self.parent.show_tables()
-                    self.parent.select_table(tables[0])
-                    self.parent.populate_table_dropdown()
-                    self.parent.populate_display()
-                    self.destroy()
-                except Exception, ex:
-                    logging.error(ex)
-                    traceback.print_exc()
-
-            b_conn = Tk.Button(self, text='Connect', command=_open_connection)\
-                              .grid(row=4, column=0, columnspan=2)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class InsertRowDialog(Tk.Toplevel):
-    """Dialog frame to insert rows into a table."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self, parent)
-        # Set a reference to the main databuild Frame
-        self.parent = parent
-        self.title('Insert Row')
-        self.insert_row()
-
-    def insert_row(self):
-        """Insert a row into the parent table.
-        Args: None
-        Rets: None
-        """
-        try:
-            column_names = list(self.parent.get_column_names(self.parent.table))
-            entry = {}
-            label = {}
-            i = 0
-            for name in column_names:
-                e = Tk.Entry(self)
-                e.grid(column=1, sticky=Tk.E)
-                entry[name] = e
-                lb = Tk.Label(self, text=name)
-                lb.grid(row=i, column=0, sticky=Tk.W)
-                label[name] = lb
-                i += 1
-
-            def _insert_row():
-                values = []
-                for name in column_names:
-                    values.append(entry[name].get())
-                values = ', '.join(map(lambda x: "'" + x + "'", values))
-                self.parent.insert_row(self.parent.table, values)
-                self.destroy()
-                self.parent.populate_display()
-
-            b_ins = Tk.Button(self,
-                              text='Insert Row',
-                              command=_insert_row)\
-                             .grid(row=i+1, column=1, sticky=Tk.W+Tk.E)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class InsertColumnDialog(Tk.Toplevel):
-    """Dialog frame to insert columns into a table."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self)
-        # Set a reference to the main databuild Frame
-        self.parent = parent
-        self.title("Insert Column")
-        self.insert_column()
-
-    def insert_column(self):
-        """Insert a column into the table
-        Args: None
-        Rets: None
-        """
-        try:
-            lbl_name = Tk.Label(self, text='Enter a column name: ')
-            lbl_name.grid(row=0, column=0, sticky=Tk.W+Tk.E)
-            ent_name = Tk.Entry(self)
-            ent_name.grid(row=0, column=1, sticky=Tk.W+Tk.E)
-            lbl_type = Tk.Label(self, text='Enter a column type: ')
-            lbl_type.grid(row=1, column=0, sticky=Tk.W+Tk.E)
-            ent_type = Tk.Entry(self)
-            ent_type.grid(row=1, column=1, sticky=Tk.W+Tk.E)
-
-            def _insert_column():
-                c_name = ent_name.get()
-                c_type = ent_type.get()
-                self.parent.insert_column(self.parent.table, c_name, c_type)
-                self.destroy()
-                self.parent.populate_display()
-            b_ins = Tk.Button(self,
-                              text='Insert Column',
-                              command=_insert_column)\
-                              .grid(row=2, column=1, sticky=Tk.W+Tk.E)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class InsertTableDialog(Tk.Toplevel):
-    """Dialog to insert a table into the database."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self)
-        self.parent = parent
-        self.title("Insert Table")
-        self.insert_table()
-
-    def insert_table(self):
-        """Insert a table into the database.
-        Args: None
-        Rets: None
-        """
-        try:
-            lbl_name = Tk.Label(self, text='Enter a table name: ').pack()
-            ent_name = Tk.Entry(self)
-            ent_name.pack()
-
-            def _insert_tab():
-                t_name = ent_name.get()
-                self.parent.insert_table(t_name)
-                self.destroy()
-                self.parent.populate_table_dropdown()
-
-            btn_name = Tk.Button(self, text='Insert Table', command=_insert_tab)
-            btn_name.pack()
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class UpdateRowDialog(Tk.Toplevel):
-    """Dialog frame to update rows into a table."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self, parent)
-        # Set a reference to the main databuild Frame
-        self.parent = parent
-        self.title('Update Row')
-        self.update_row()
-
-    def update_row(self):
-        """Update a row into the parent table.
-        Args: None
-        Rets: None
-        """
-        try:
-            column_names = list(self.parent.get_column_names(self.parent.table))
-            entry = {}
-            label = {}
-            i = 0
-            for name in column_names:
-                e = Tk.Entry(self)
-                e.grid(column=1, sticky=Tk.E)
-                entry[name] = e
-                lb = Tk.Label(self, text=name)
-                lb.grid(row=i, column=0, sticky=Tk.W)
-                label[name] = lb
-                i += 1
-
-            def _update_row():
-                values = []
-                for name in column_names:
-                    values.append(entry[name].get())
-                values = ', '.join(map(lambda x: "'" + x + "'", values))
-                self.parent.update_row(self.parent.table, values)
-                self.destroy()
-                self.parent.populate_display()
-
-            b_ins = Tk.Button(self,
-                              text='Update Row',
-                              command=_update_row)
-            b_ins.grid(row=i+1, column=1, sticky=Tk.W+Tk.E)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class UpdateColumnDialog(Tk.Toplevel):
-    """Dialog frame to update columns into a table."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self)
-        # Set a reference to the main databuild Frame
-        self.parent = parent
-        self.title("Update Column")
-        self.update_column()
-
-    def update_column(self):
-        """Insert a column into the table
-        Args: None
-        Rets: None
-        """
-        try:
-            lbl_name = Tk.Label(self, text='Enter a column name: ')
-            lbl_name.grid(row=0, column=0, sticky=Tk.W+Tk.E)
-            ent_name = Tk.Entry(self)
-            ent_name.grid(row=0, column=1, sticky=Tk.W+Tk.E)
-            lbl_type = Tk.Label(self, text='Enter a column type: ')
-            lbl_type.grid(row=1, column=0, sticky=Tk.W+Tk.E)
-            ent_type = Tk.Entry(self)
-            ent_type.grid(row=1, column=1, sticky=Tk.W+Tk.E)
-
-            def _update_column():
-                c_name = ent_name.get()
-                c_type = ent_type.get()
-                self.parent.update_column(self.parent.table, c_name, c_type)
-                self.destroy()
-                self.parent.populate_display()
-            b_ins = Tk.Button(self,
-                              text='Update Column',
-                              command=_update_column)\
-                              .grid(row=2, column=1, sticky=Tk.W+Tk.E)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class DeleteRowDialog(Tk.Toplevel):
-    """Dialog confirmation for deleting a row."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self)
-        self.parent = parent
-        self.title('Delete Row')
-        self.delete_row()
-
-    def delete_row(self):
-        """Delete a row from the table.
-        Args: None
-        Rets: None
-        """
-        try:
-            lbl_confirm = Tk.Label(self, text='Confirm Delete Row?').pack()
-            btn_cancel = Tk.Button(self, text='Cancel',
-                                   command=self.destroy).pack()
-            def _delete_row():
-                self.parent.delete_current_row()
-                self.destroy()
-                self.parent.populate_display()
-            btn_confirm = Tk.Button(self, text='Delete Row',
-                        command=_delete_row).pack()
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class DeleteColumnDialog(Tk.Toplevel):
-    """Dialog confirmation for deleting a column."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self)
-        self.parent = parent
-        self.title('Delete column')
-        self.delete_column()
-
-    def delete_column(self):
-        """Delete a column from the table.
-        Args: None
-        Rets: None
-        """
-        try:
-            lbl_confirm = Tk.Label(self,
-                                   text='Enter the column to delete: ').pack()
-            e_column = Tk.Entry(self)
-            e_column.pack()
-            def _delete_column():
-                try:
-                    self.parent.delete_column(self.parent.table,
-                                              e_column.get())
-                    self.parent.populate_display()
-                except Exception, ex:
-                    logging.error(ex)
-                    traceback.print_exc()
-            btn_confirm = Tk.Button(self, text='Delete Column',
-                        command=_delete_column).pack()
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class DescribeTableDialog(Tk.Toplevel):
-    """Dialog Frame displaying table properties."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self, parent)
-        self.parent = parent
-        self.title('Table Properties')
-        self.geometry("640x200")
-        self.show_table_properties()
-
-    def show_table_properties(self):
-        """Display the table properties.
-        Args: None, 
-        Rets: None
-        """
-        try:
-            properties = ttk.Treeview(self)
-            data = self.parent.describe_table(self.parent.table)
-            list_columns = self.parent.get_column_cursor_names()[1:]
-            properties['columns'] = list_columns
-            map(properties.delete, properties.get_children())
-            for column in list_columns:
-                properties.column(column,minwidth=10, width = 15)
-                properties.heading(column, text=str(column))
-            for row in data:
-                if row is None:
-                    row = 'None'
-                properties.insert("", 'end', text="", values=row)
-            properties['show'] = 'headings'
-            properties.pack(expand=Tk.YES, fill=Tk.BOTH)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class ColumnRelationshipDialog(Tk.Toplevel):
-    """Dialog Frame displaying column relationship"""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self, parent)
-        self.parent = parent
-        self.title('Column Relationships')
-        self.geometry("760x720")
-        self.show_column_relationships()
-
-    def show_column_relationships(self):
-        """Display the column relationships.
-        Args: None
-        Rets: None
-        """
-        try:
-            properties = ttk.Treeview(self)
-            data = self.parent.show_column_relationships(self.parent.table)
-            list_columns = self.parent.get_column_cursor_names()[1:]
-            properties['columns'] = list_columns
-            map(properties.delete, properties.get_children())
-            for column in list_columns:
-                properties.column(column,minwidth=25)
-                properties.heading(column, text=str(column))
-            for row in data:
-                if row is None:
-                    row = 'None'
-                properties.insert("", 'end', text="", values=row)
-            properties['show'] = 'headings'
-            properties.pack(expand=Tk.YES, fill=Tk.BOTH)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class ViewLogDialog(Tk.Toplevel):
-    """Dialog Frame displaying the application log."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self, parent)
-        self.parent = parent
-        self.title('Log')
-        self.view_log_dialog()
-
-    def view_log_dialog(self):
-        """Display the application log.
-        Args: None
-        Rets: None
-        """
-        try:
-            def _clear_log():
-                with open('databuild.log', 'w') as f:
-                    f.seek(0)
-                    f.write('')
-                self.view_log_dialog()
-            clear_log = Tk.Button(self, text='Clear Log', command=_clear_log)
-            clear_log.pack()
-            with open('databuild.log', 'r') as f:
-                data = f.readlines()
-                log = Tk.Listbox(self, height=30, width=100)
-                for i, item in enumerate(data):
-                    log.insert(i+1, data[i])
-                log.pack()
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class ConnectionInfoDialog(Tk.Toplevel):
-    """Dialog Frame displaying the connection information."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self, parent)
-        self.parent = parent
-        self.title('Connection Info')
-        self.view_connection_info()
-
-    def view_connection_info(self):
-        """Display the connection info."""
-        try:
-            lbl_host = Tk.Label(self, text='Host: ')\
-                .grid(row=0, column=0)
-            lbl_host2 = Tk.Label(self, text=self.parent.host)\
-                .grid(row=0, column=1)
-            lbl_user = Tk.Label(self, text='User: ')\
-                .grid(row=1, column=0)
-            lbl_user2 = Tk.Label(self, text=self.parent.user)\
-                .grid(row=1, column=1)
-            lbl_pass = Tk.Label(self, text='Password: ')\
-                .grid(row=2, column=0)
-            lbl_pass2 = Tk.Label(self, text=self.parent.password)\
-                .grid(row=2, column=1)
-            lbl_data = Tk.Label(self, text='Database: ')\
-                .grid(row=3, column=0)
-            lbl_data2 = Tk.Label(self, text=self.parent.database)\
-                .grid(row=3, column=1)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class HelpMenuDialog(Tk.Toplevel):
-    """Dialog frame displaying help topics."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self, parent)
-        self.parent = parent
-        self.title('Help Info')
-        self.view_help_info()
-
-    def view_help_info(self):
-        """Display the connection info."""
-        try:
-            with open('README.md', 'r') as f:
-                data = f.readlines()
-                log = Tk.Listbox(self, height=30, width=100)
-                for i, item in enumerate(data):
-                    log.insert(i+1, data[i])
-                log.grid(row =0, column=0, sticky='ew')
-                yscroll = Tk.Scrollbar(command=log.yview,
-                                       orient=Tk.VERTICAL)
-                yscroll.grid(row=0, column=1, sticky='ns')
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-class AppInfoDialog(Tk.Toplevel):
-    """Dialog frame displaying help topics."""
-    def __init__(self, parent):
-        """Constructor"""
-        Tk.Toplevel.__init__(self, parent)
-        self.parent = parent
-        self.title('App Info')
-        self.view_help_info()
-
-    def view_help_info(self):
-        """Display the connection info."""
-        try:
-            lbl_host = Tk.Label(self, text='Copyright 2014').pack()
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
 
 ################################################################################
 #################### Main Method ###############################################
