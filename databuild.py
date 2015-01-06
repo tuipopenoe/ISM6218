@@ -11,6 +11,27 @@ import MySQLdb
 import traceback
 import logging
 
+# Custom Classes
+# import os
+# import glob
+# modules = glob.glob(os.path.dirname(__file__)+"/*.py")
+# __all__ = [ os.path.basename(f)[:-3] for f in modules]
+from app_info_dialog import *
+from column_relationship_dialog import *
+from connection_info_dialog import *
+from delete_column_dialog import *
+from delete_row_dialog import *
+from describe_row_dialog import *
+from describe_table_dialog import *
+from help_menu_dialog import *
+from insert_column_dialog import *
+from insert_row_dialog import *
+from insert_table_dialog import *
+from open_connection_dialog import *
+from update_column_dialog import *
+from update_row_dialog import *
+from view_log_dialog import *
+
 class Databuild(Tk.Frame):
     def __init__(self, parent):
         """Constructor"""
@@ -20,19 +41,15 @@ class Databuild(Tk.Frame):
         logging.basicConfig(filename='databuild.log', level=logging.INFO)
         # Set the parent Tkinter.Frame
         self.parent = parent
-        # Set minimum size
-        self.parent.minsize(width=720, height=300)
         # Initialize the class variables
         self.init_data()
         # Initialize the MySQL database connection
-        self.init_connection()
-        # Initialize the application GUI elements
-        self.init_ui()
+        self.open_connection()
         # Initialize the data displayed in the GUI
         self.init_display()
 
 ################################################################################
-#################### Execute Command ###########################################
+#################### Commands ##################################################
 ################################################################################
 
     def execute_command(self, sql, db, cursor):
@@ -91,50 +108,6 @@ class Databuild(Tk.Frame):
 #################### Init ######################################################
 ################################################################################
 
-    def init_connection(self):
-        """Initialize the MySQL database connection.
-        Args: None
-        Rets: None
-        """
-        try:
-            self.open_connection()
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_data(self):
-        """Initialize the class variables.
-        Args: None
-        Rets: None
-        """
-        try:
-            ############################
-            # Initialize Class Variables
-            ############################
-            # MySQL database variables
-            self.db = None
-            self.cursor = None
-            # Currently Selected Row, Column, Table
-            self.current_table = None
-            self.current_row = None
-            self.current_column = None
-            self.current_columns = None
-            self.table = 'databuild'
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui(self):
-        """Initialize the application GUI elements.
-        Args: None
-        Rets: None
-        """
-        # Set the title
-        self.parent.title('Databuild 2.0')
-        # Initialize the UI Menus
-        self.init_ui_menus()
-        # Initialize the main window display
-        self.init_display()
 
     def init_display(self):
         """Load the main UI elements.
@@ -184,13 +157,16 @@ class Databuild(Tk.Frame):
         try:
             # Conncet to a MySQL database and return the connection
             db = MySQLdb.connect(host,user, password, database)
-            tkMessageBox.showinfo('','Connection opened on %s.' % host)
+            #tkMessageBox.showinfo('','Connection opened on %s.' % host)
             return db
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
 
     def get_cursor(self, db):
+        """Gets the cursor for the current Database connection.
+        Args: db -> MySQL database connection
+        Rets: Cursor for the current connection."""
         try:
             cursor = db.cursor()
             return cursor
@@ -207,226 +183,6 @@ class Databuild(Tk.Frame):
             # Disconnect from the MySQL database
             db.close()
             tkMessageBox.showinfo('', 'Connection closed')
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def open_new_connection(self, host='localhost', user='root',
-                        password='passw0rd', database='databuild'):
-        """Open a new connection and display a message box if successful.
-        Args: host-> IP address of the host for the database
-              user-> The user for the MySQL database
-              password-> The password for the MySQL database
-              database-> The default database in MySQL
-        Rets: None
-        """
-        try:
-            # Open a new connection
-            logging.info( 'Open new %s' %str((host, user, password, database)))
-            self.open_connection(host, user, password, database)
-            # Populate the tables from the new database.
-            self.populate_table_dropdown()
-            # Display message if connection succesful.
-            tkMessageBox.showinfo("", "Connection to database %s opened"
-                                  % self.database)
-        except Exception, ex:
-            tk.MessageBox.showinfo("", "Failed to connect to %s database"
-                                   % self.database)
-            logging.error(ex)
-            traceback.print_exc()
-
-################################################################################
-#################### Init Menus ################################################
-################################################################################
-    def init_ui_menus(self):
-        """Initialize the menus for the GUI.
-        Args: None
-        Rets: None
-        """
-        try:
-            # root menu bar object
-            self.menu_bar = Tk.Menu(self.parent)
-            # File Menu
-            self.init_ui_file_menu()
-            # Connection Menu
-            self.init_ui_connection_menu()
-            # Relationships Menu
-            self.init_ui_relationships_menu()
-            # Insert Menu
-            self.init_ui_insert_menu()
-            # Update Menu
-            self.init_ui_update_menu()
-            # View Menu
-            self.init_ui_view_menu()
-            # Delete Menu
-            self.init_ui_delete_menu()
-            # Generate Menu
-            self.init_ui_generate_menu()
-            # Help Menu
-            self.init_ui_help_menu()
-            # Set menu bar for root frame 
-            self.parent.config(menu=self.menu_bar)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_file_menu(self):
-        """Initialize the menu for application commands.
-        Args: None
-        Rets: None
-        """
-        try:
-            self.file_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            #TODO
-            self.file_menu.add_separator()
-            self.menu_bar.add_cascade(label='File',
-                                      menu=self.file_menu)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_connection_menu(self):
-        """Initialize menu for viewing opening and closing database connections.
-        Args: None
-        Rets: None
-        """
-        try:
-            # Connection Elements
-            self.conn_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.conn_menu.add_command(label='Open Connection',
-                                       command=self.open_connection_dialog)
-            self.conn_menu.add_separator()
-            self.conn_menu.add_command(label='Close Connection',
-                                       command=self.close_connection)
-            self.conn_menu.add_separator()
-            self.conn_menu.add_command(label='View Connection Info',
-                                       command=self.view_connection_info_dialog)
-            self.menu_bar.add_cascade(label='Connections',
-                                      menu=self.conn_menu)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_relationships_menu(self):
-        """Initialize the menu for viewing database relationships.
-        Args: None
-        Rets: None
-        """
-        try:
-            self.rel_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.rel_menu.add_command(label='View Relationships',
-                                      command=self.view_relationships_dialog)
-            self.rel_menu.add_separator()
-            self.rel_menu.add_command(label='Describe Table',
-                                      command=self.describe_table_dialog)
-            self.menu_bar.add_cascade(label='Relationships',
-                                      menu=self.rel_menu)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_insert_menu(self):
-        """Initialize the menu for inserting rows, columns, and tables.
-        Args: None
-        Rets: None
-        """
-        try:
-            self.insert_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.insert_menu.add_command(label='Insert Row',
-                                         command=self.insert_row_dialog)
-            self.insert_menu.add_separator()
-            self.insert_menu.add_command(label='Insert Column',
-                                         command=self.insert_column_dialog)
-            self.insert_menu.add_separator()
-            self.insert_menu.add_command(label='Insert Table',
-                                         command=self.insert_table_dialog)
-            self.menu_bar.add_cascade(label='Insert',
-                                      menu=self.insert_menu)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_update_menu(self):
-        """Initialize the menu for updating rows, columns, and tables.
-        Args: None
-        Rets: None
-        """
-        try:
-            self.update_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.update_menu.add_command(label='Update Row',
-                                         command=self.update_row_dialog)
-            self.update_menu.add_separator()
-            self.update_menu.add_command(label='Update Column',
-                                         command=self.update_column_dialog)
-            self.menu_bar.add_cascade(label='Update',
-                                      menu=self.update_menu)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_view_menu(self):
-        """Initialize the menu for viewing application logs.
-        Args: None
-        Rets: None
-        """
-        try:
-            self.view_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.view_menu.add_command(label='View Log',
-                                      command=self.view_log_dialog)
-            self.view_menu.add_separator()
-            self.menu_bar.add_cascade(label='View',
-                                      menu=self.view_menu)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_delete_menu(self):
-        """Initialize the menu for deleting rows, columns, and tables.
-        Args: None
-        Rets: None
-        """
-        try:
-            self.delete_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.delete_menu.add_command(label='Delete Row',
-                                         command=self.delete_row_dialog)
-            self.delete_menu.add_separator()
-            self.delete_menu.add_command(label='Delete Column',
-                                         command=self.delete_column_dialog)
-            self.menu_bar.add_cascade(label='Delete', menu=self.delete_menu)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_generate_menu(self):
-        """Initialize the generate menu for importing and exporting files.
-        Args: None
-        Rets: None
-        """
-        try:
-            self.gen_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.gen_menu.add_command(label='Import from File',
-                                      command=self.import_file)
-            self.gen_menu.add_separator()
-            self.gen_menu.add_command(label='Export to File',
-                                      command=self.export_file)
-            self.menu_bar.add_cascade(label='Generate', menu=self.gen_menu)
-        except Exception, ex:
-            logging.error(ex)
-            traceback.print_exc()
-
-    def init_ui_help_menu(self):
-        """Initialize the help menu.
-        Args: None
-        Rets: None
-        """
-        try:
-            self.help_menu = Tk.Menu(self.menu_bar, tearoff=0)
-            self.help_menu.add_command(label='Help',
-                                       command=self.help_menu_dialog)
-            self.help_menu.add_separator()
-            self.help_menu.add_command(label='Application Info',
-                                       command=self.app_info_dialog)
-            self.menu_bar.add_cascade(label='Help', menu=self.help_menu)
         except Exception, ex:
             logging.error(ex)
             traceback.print_exc()
@@ -622,7 +378,7 @@ class Databuild(Tk.Frame):
             logging.error(ex)
             traceback.print_exc()
 ################################################################################
-#################### Select Data ###############################################
+#################### ACTIONS ###################################################
 ################################################################################
 
     def get_current_row(self, instance):
